@@ -1,3 +1,72 @@
-=head1 Whatever
+=head1 Parrot Data Structures Library
+
+=head2 Description
+
+This library intends to provide a listing of specialized PMC data types for use
+on the Parrot VM. These types will each be optimized in some way to provide
+better performance and/or more efficient use of memory than the default array
+types provided by the core VM. These types will be useful to people who need
+high performance and are willing to exchange some flexibility and functionality
+to achieve it.
+
+Each type will have a particular optimization focus that will drive it's
+development. End users can select from among several variants to find one with
+a focus that meets the needs of the application.
+
+=head2 Intended Data Types
+
+Here is a general list of data types. Initially we will aim to produce versions
+of these types that store PMC pointers only. Eventually other variants designed
+to hold other primitive types (INTVAL, STRING, FLOATVAL) for optimized access
+to those things.
+
+=over 4
+
+=item* Stack
+
+This will be a First-In-Last-Out stack type with an optimization focus on
+push/pop throughput performance. This type will not provide unshift/shift
+access and may have sub-optimal performance for other access methods.
+
+There may be two stack types with fixed-size and dynamically-resizable memory
+layouts.
+
+=item* Queue
+
+This will be a First-In-First-Out queue type with an optimization focus on
+push/shift throughput performance. This type will not provide pop/unshift
+access OR indexed element access.
+
+=item* Fixed-Size Array
+
+This will be a simple array type with an optimization focus on indexed element
+access. There will be no push/pop/shift/unshift access to elements. This array
+type will have a fixed-size and must be preallocated.
+
+=item* Dynamically-Resizable Array
+
+This will be a simple array type with an optimization focus on indexed element
+access. There will be no pop/shift/unshift access to elements, but there will be
+push access. This array type will be dynamically-extendable.
+
+=item* Sparce Array
+
+This will be an array type with an optimization focus on efficient memory
+usage over sparse data sets. This type will not provide push/pop/shift/unshift
+access, but will be dynamically-resizable.
+
+=back
+
+This is only a partial list of possible types.
+
+=head2 Build
+
+Nothing to build yet
+
+=head2 Contact
+
+Contact the Parrot-Data-Structures team at
+
+http://github.com/Whiteknight/parrot-data-structures
 
 =cut
