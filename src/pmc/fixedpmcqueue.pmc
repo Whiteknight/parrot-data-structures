@@ -12,10 +12,14 @@ pmclass FixedPMCQueue provides queue {
     ATTR INTVAL queue_end;
     ATTR INTVAL items;
 
+    /* Initialize the PMC */
     VTABLE void init() {
         PObj_custom_mark_destroy_SETALL(SELF);
+        /* All fields in attrs should be null/0, so no worries about
+           initialization here. */
     }
 
+    /* Destroy the PMC. Free allocated storage */
     VTABLE void destroy() {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         PMC ** const s = attrs->storage;
@@ -23,6 +27,7 @@ pmclass FixedPMCQueue provides queue {
            mem_sys_free(s);
     }
 
+    /* Mark the PMC for GC. */
     VTABLE void mark() {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         PMC ** const s = attrs->storage;
@@ -66,7 +71,8 @@ pmclass FixedPMCQueue provides queue {
                 ptr = FPQ_NEXT_IDX(ptr, size);
                 i++;
             }
-            mem_sys_free(s);
+            if (s)
+                mem_sys_free(s);
             attrs->storage = newstorage;
             attrs->queue_start = 0;
             attrs->queue_end = i;
