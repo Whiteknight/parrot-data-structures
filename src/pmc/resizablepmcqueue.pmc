@@ -1,0 +1,117 @@
+#define RPQ_ATTRS_CONST(x) Parrot_ResizablePMCQueue_Attributes * const (x)
+#define RPQ_GET_ATTRS(x) PARROT_RESIZABLEPMCQUEUE(x)
+
+typedef struct _rpq_node {
+    struct _rpq_node * next;
+    PMC *item;
+} rpq_node;
+
+rpq_node
+rpq_alloc_new_node(PMC *item)
+{
+    rpq_node * const newnode = mem_sys_alloc(sizeof(rpq_node));
+    rpq_node->next = NULL;
+    rpq_node->item = item;
+    return rpq_node;
+}
+
+PMC *
+rpq_free_node(rpq_node *node)
+{
+    PMC * const item = node->item;
+    mem_sys_free(node);
+    return item;
+}
+
+pmclass ResizablePMCQueue provides queue {
+    ATTR rpq_node * root;
+    ATTR rpq_node * top;
+
+    VTABLE void init() {
+        PObj_custom_mark_destroy_SETALL(SELF);
+    }
+
+    VTABLE void destroy() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * root = attrs->root;
+        while (root) {
+            rpq_node * const next = root->next;
+            mem_sys_free(root);
+            root = next;
+        }
+    }
+
+    VTABLE void mark() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * root = attrs->root;
+        while (root) {
+            Parrot_gc_mark_PMC_alive(INTERP, root);
+            root = root->next;
+        }
+    }
+
+    VTABLE void freeze(PMC *info) {
+    }
+
+    VTABLE void thaw(PMC *info) {
+    }
+
+    VTABLE void visit(PMC *info) {
+    }
+
+    VTABLE void push(PMC *item) {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * const node = rpq_alloc_new_node(item);
+        rpq_node * const top = attrs->top;
+        if (!top)
+            attrs->root = node;
+        top->next = node;
+        attrs->top = node;
+    }
+
+    VTABLE PMC* shift() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * const root = attrs->root;
+        if (!root)
+            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                "ResizablePMCQueue: Shift from empty queue");
+        attrs->root = root->next;
+        return rpq_free_node(root);
+    }
+
+    /* Get the number of items in the queue. WARNING: O(n) */
+    VTABLE INTVAL elements() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * const root = attrs->root;
+        INTVAL count = 0;
+        while (root) {
+            count++;
+            root = root->next;
+        }
+        return count;
+    }
+
+    METHOD to_array() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * const root = attrs->root;
+        PMC * newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
+        INTVAL idx = 0;
+        while (root) {
+            VTABLE_set_pmc_keyed_int(INTERP, newarray, idx, root->item);
+            idx++;
+            root = root->next;
+        }
+        RETURN(PMC *newarray);
+    }
+
+    METHOD total_mem_size() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * const root = attrs->root;
+        INTVAL size = sizeof(PMC) + sizeof(Parrot_ResizablePMCQueue_Attributes);
+        while (root) {
+            size += sizeof(rpq_node);
+            root = root->next;
+        }
+        return size;
+    }
+}
