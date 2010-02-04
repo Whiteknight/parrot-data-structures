@@ -10,10 +10,12 @@ pmclass FixedPMCStack provides stack{
     ATTR INTVAL items;
     ATTR INTVAL size;
 
+    /* Initialize the PMC */
     VTABLE void init() {
         PObj_custom_mark_destroy_SETALL(SELF);
     }
 
+    /* Destroy the PMC and free storage */
     VTABLE void destroy() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         PMC ** const s = attrs->storage;
@@ -21,6 +23,7 @@ pmclass FixedPMCStack provides stack{
             mem_sys_free(s);
     }
 
+    /* Mark the PMC for GC */
     VTABLE void mark() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         PMC ** const s = attrs->storage;
@@ -39,6 +42,7 @@ pmclass FixedPMCStack provides stack{
     VTABLE void visit(PMC *info) {
     }
 
+    /* Size the PMC */
     VTABLE void set_integer_native(INTVAL newsize) {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
@@ -52,6 +56,7 @@ pmclass FixedPMCStack provides stack{
         }
     }
 
+    /* Push an item onto the stack */
     VTABLE void push(PMC *item) {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
@@ -64,6 +69,7 @@ pmclass FixedPMCStack provides stack{
         attrs->items = items + 1;
     }
 
+    /* Pop an item off the stack */
     VTABLE PMC* pop() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL items = attrs->items;
@@ -78,12 +84,23 @@ pmclass FixedPMCStack provides stack{
         return item;
     }
 
+    /* Get the number of items on the stack */
     VTABLE INTVAL elements() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL items = attrs->items
         return items;
     }
 
+    /* Get the total allocated size of the stack */
+    VTABLE INTVAL get_integer_native() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL size = attrs->size
+        return size;
+    }
+
+    /* Return a FixedPMCArray containing items on the stack. The FPA is the
+       same length as the allocated stack storage, and all empty spaces are
+       filled with PMCNULL */
     METHOD to_array() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         PMC * const newarray = pmc_new(INTERP, enum_class_FixedPMCArray);
@@ -99,6 +116,8 @@ pmclass FixedPMCStack provides stack{
         RETURN(PMC * newarray);
     }
 
+    /* Get the total size of the PMC, in bytes. This includes allocated storage
+       for stack data, the PMC structure, and the attributes structure */
     METHOD total_mem_size() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
@@ -107,6 +126,7 @@ pmclass FixedPMCStack provides stack{
         RETURN(INTVAL total_size);
     }
 
+    /* Clear the stack, optionally resizing it */
     METHOD clear(INTVAL newsize :optional, INTVAL has_newsize :opt_flag) {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         if (has_newsize) {
