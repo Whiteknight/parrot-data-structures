@@ -1,0 +1,156 @@
+#define RPS_POINTERS_PER_CHUNK
+#define RPS_ATTRS_CONST(x) Parrot_ResizablePMCStack_Attributes * const (x)
+#define RPS_GET_ATTRS(x) PARROT_RESIZABLEPMCSTACK(x)
+#define RPS_ALLOC_CHUNK() (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
+
+typedef struct _rps_chunk {
+    struct _rps_chunk * prev;
+    struct _rps_chunk * next;
+    INTVAL items;
+    PMC * storage[RPS_POINTERS_PER_CHUNK];
+} rps_chunk;
+
+rps_chunk *
+rps_new_chunk(rps_chunk *prev)
+{
+    rps_chunk * newchunk = mem_sys_allocate(sizeof(rps_chunk));
+    newchunk->prev = prev;
+    newchunk->next = NULL;
+    newchunk->items = 0;
+    return newchunk;
+}
+
+/* ResizablePMCStack is a dynamically-growing First-In-Last-Out stack structure.
+   It is optimized for high-throughput push/pop access. */
+pmclass ResizablePMCStack provides stack {
+    ATTR rps_chunk *root_chunk;
+    ATTR rps_chunk *top_chunk;
+    ATTR INTVAL items;
+    ATTR INTVAL numchunks;
+
+    /* Initialize the PMC and allocate the first chunk */
+    VTABLE void init() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk * const newchunk = rps_new_chunk(NULL);
+        attrs->root_chunk = newchunk;
+        attrs->top_chunk = newchunk;
+        PObj_custom_mark_destroy_SETALL(SELF);
+    }
+
+    /* Destroy the PMC and free all allocated storage */
+    VTABLE void destroy() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = attrs->root_chunk;
+        while (ptr) {
+            rps_chunk * const next = ptr->next;
+            mem_sys_free(ptr);
+            ptr = next;
+        }
+    }
+
+    /* Mark the stack for GC */
+    VTABLE void mark() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = attrs->root_chunk;
+        while (ptr) {
+            const INTVAL items = ptr->items;
+            INTVAL i;
+            PMC ** const s = ptr->storage;
+            for (i = 0; i < items; i++)
+                Parrot_gc_mark_PMC_alive(INTERP, s[i]);
+            ptr = ptr->next;
+        }
+    }
+
+    VTABLE void freeze(PMC *info) {
+    }
+
+    VTABLE void thaw(PMC *info) {
+    }
+
+    VTABLE void visit(PMC *info) {
+    }
+
+    /* Push a PMC onto the stack */
+    VTABLE void push(PMC *item) {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk * current = attrs->top_chunk;
+        INTVAL idx;
+        if (current->items == RPS_POINTERS_PER_CHUNK) {
+            rps_chunk * const newchunk = rps_new_chunk(current);
+            current->next = newchunk;
+            attrs->top_chunk = newchunk;
+            current = newchunk;
+        }
+        idx = current->items;
+        current->storage[idx] = item;
+        idx++;
+        current->items = idx++;
+    }
+
+    /* Pop a PMC off the stack */
+    VTABLE PMC* pop() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *current = attrs->top_chunk;
+        INTVAL idx = current->items - 1;
+        if (idx == -1)
+            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                "ResizablePMCStack: Pop from empty stack");
+        else {
+            PMC * item = current->storage[idx];
+            rps_chunk * const last = current->prev;
+            /* Popped the last item off this chunk. If this is the first chunk,
+               the last is NULL, so don't take the chunk off the list.*/
+            if (idx == 0 && last != NULL) {
+                last->next = NULL;
+                attrs->top_chunk = last;
+            }
+            return item;
+        }
+    }
+
+    /* Get the total number of elements. WARNING: O(N) */
+    VTABLE INTVAL elements() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = attrs->root_chunk;
+        INTVAL total = 0;
+        while (ptr) {
+            const INTVAL items = ptr->items;
+            total += items;
+            ptr = ptr->next;
+        }
+        return total;
+    }
+
+    /* Get a ResizablePMCArray containing the contents of the stack */
+    METHOD to_array() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = attrs->root_chunk;
+        PMC *newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
+        INTVAL i = 0;
+        while (ptr) {
+            PMC ** const s = ptr->storage;
+            INTVAL items = ptr->items;
+            INTVAL j = 0;
+            for (j = 0; j < items; j++) {
+                VTABLE_set_pmc_keyed_int(INTERP, i, s[j]);
+                i++;
+            }
+            ptr = ptr->next;
+        }
+        RETURN(PMC *newarray);
+    }
+
+    /* Get the total allocated memory size, in bytes. Includes the size of the
+       PMC structure and attribute structure */
+    METHOD total_mem_size() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = attrs->root_chunk;
+        INTVAL size = sizeof(PMC) + sizeof(Parrot_ResizablePMCStack_Attributes);
+        while (ptr) {
+            size += sizeof(rps_chunk)
+            ptr = ptr->next;
+        }
+        return size;
+    }
+}
