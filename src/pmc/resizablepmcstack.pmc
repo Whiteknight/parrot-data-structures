@@ -1,4 +1,4 @@
-#define RPS_POINTERS_PER_CHUNK
+#define RPS_POINTERS_PER_CHUNK 16
 #define RPS_ATTRS_CONST(x) Parrot_ResizablePMCStack_Attributes * const (x)
 #define RPS_GET_ATTRS(x) PARROT_RESIZABLEPMCSTACK(x)
 #define RPS_ALLOC_CHUNK() (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
