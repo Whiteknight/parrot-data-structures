@@ -62,7 +62,7 @@ pmclass FixedPMCQueue provides queue {
         if (newsize < items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTIO_OUT_OF_BOUNDS,
                 "FixedPMCQueue: Cannot shrink size with items in queue");
-        else {
+        else if (newsize != size) {
             INTVAL ptr = start;
             PMC ** newstorage = FPQ_ALLOCATE(newsize);
             INTVAL i = 0;
@@ -167,7 +167,7 @@ pmclass FixedPMCQueue provides queue {
             if (s)
                 mem_sys_free(s);
             attrs->storage = FPQ_ALLOCATE(newsize);
-            attrs->size = newsize;;
+            attrs->size = newsize;
         }
         attrs->queue_start = 0;
         attrs->queue_end = 0;
