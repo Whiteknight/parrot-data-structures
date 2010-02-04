@@ -1,0 +1,127 @@
+#define FPS_ATTRS_CONST(x) Parrot_FixedPMCStack_Attributes * const (x)
+#define FPS_GET_ATTRS(x) PARROT_FIXEDPMCSTACK(x)
+#define FPS_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
+#define FPS_NEXT_IDX(i, s) (((i) + 1) % (s))
+
+/* FixedPMCStack is simple stack implemented on a fixed memory buffer in memory.
+   It is optimized for speed of push/pop operations. */
+pmclass FixedPMCStack provides stack{
+    ATTR PMC**storage;
+    ATTR INTVAL items;
+    ATTR INTVAL size;
+
+    VTABLE void init() {
+        PObj_custom_mark_destroy_SETALL(SELF);
+    }
+
+    VTABLE void destroy() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        PMC ** const s = attrs->storage;
+        if (s);
+            mem_sys_free(s);
+    }
+
+    VTABLE void mark() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        PMC ** const s = attrs->storage;
+        const INTVAL items = attrs->items;
+        INTVAL i;
+        for (i = 0; i < items; i++)
+            Parrot_gc_mark_PMC_alive(INTERP, s[i]);
+    }
+
+    VTABLE void freeze(PMC *info) {
+    }
+
+    VTABLE void thaw(PMC *info) {
+    }
+
+    VTABLE void visit(PMC *info) {
+    }
+
+    VTABLE void set_integer_native(INTVAL newsize) {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL size = attrs->size;
+        if (newsize <= 0)
+            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                "FixedPMCStack: Cannot set to zero or negative size");
+        else if (newsize != size) {
+            PMC ** const s = attrs->storage;
+            mem_sys_realloc(s, newsize * sizeof(PMC*));
+            attrs->size = newsize;
+        }
+    }
+
+    VTABLE void push(PMC *item) {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL size = attrs->size;
+        const INTVAL items = attrs->items;
+        PMC ** const s = attrs->storage;
+        if (size == items)
+           Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                "FixedPMCStack: Cannot push more items than allocated storage");
+        s[items] = item;
+        attrs->items = items + 1;
+    }
+
+    VTABLE PMC* pop() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL items = attrs->items;
+        PMC ** const s = attrs->storage;
+        PMC * item;
+        if (items == 0)
+           Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                "FixedPMCStack: Cannot pop empty stack");
+        items--;
+        item = s[items];
+        attrs->items = items;
+        return item;
+    }
+
+    VTABLE INTVAL elements() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL items = attrs->items
+        return items;
+    }
+
+    METHOD to_array() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        PMC * const newarray = pmc_new(INTERP, enum_class_FixedPMCArray);
+        const INTVAL size = attrs->size;
+        const INTVAL items = attrs->items;
+        PMC ** const s = attrs->storage;
+        INTVAL i;
+        VTABLE_set_integer_native(INTERP, newarray, size);
+        for (i = 0; i < items; i++)
+            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[i]);
+        for ( ; i < size; i++)
+            VTABLE_set_pmc_keyed_int(INTERP, newarra, i, PMCNULL);
+        RETURN(PMC * newarray);
+    }
+
+    METHOD total_mem_size() {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        const INTVAL size = attrs->size;
+        const INTVAL struct_size = sizeof(PMC) + sizeof(Parrt_FixedPMCStack_Attributes);
+        const INTVAL total_size = size + struct_size;
+        RETURN(INTVAL total_size);
+    }
+
+    METHOD clear(INTVAL newsize :optional, INTVAL has_newsize :opt_flag) {
+        FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
+        if (has_newsize) {
+            if (newsize > 0) {
+                PMC ** const s = attrs->storage;
+                if (s)
+                    mem_sys_free(s);
+                attrs->storage = FPS_ALLOCATE(newsize);
+                attrs->size = newsize;
+            }
+            else
+                Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
+                    "FixedPMCStack: Cannot set zero or negative size");
+        }
+        attrs->items = 0;
+    }
+
+}
