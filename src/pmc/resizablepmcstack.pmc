@@ -92,11 +92,12 @@ pmclass ResizablePMCStack provides stack {
     VTABLE PMC* pop() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
         rps_chunk *current = attrs->top_chunk;
-        INTVAL idx = current->items - 1;
-        if (idx == -1)
+        INTVAL idx = current->items;
+        if (idx == 0)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "ResizablePMCStack: Pop from empty stack");
-        else {
+        idx--;
+        {
             PMC * item = current->storage[idx];
             rps_chunk * const last = current->prev;
             /* Popped the last item off this chunk. If this is the first chunk,
