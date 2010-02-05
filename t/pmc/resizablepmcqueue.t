@@ -85,7 +85,7 @@ sub vtable_shift_pmc() {
         ok(1, "can shift")
         goto shift_sanity_end
       shift_sanity_handler:
-        ok(0, "cannot shift");
+        ok(0, "cannot shift")
       shift_sanity_end:
         pop_eh
         is($P1, $P2)

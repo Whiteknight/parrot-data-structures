@@ -4,7 +4,8 @@ MAIN();
 
 sub MAIN () {
     load_test_more();
-    plan(0);
+    plan(1);
+    ok(1);
 
     load_linalg_group();
 }
