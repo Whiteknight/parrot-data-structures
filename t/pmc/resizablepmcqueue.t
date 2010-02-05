@@ -4,13 +4,13 @@ MAIN();
 
 sub MAIN () {
     load_test_more();
-    plan(5);
+    plan(16);
 
     load_linalg_group();
     create_resizablepmcqueue();
     op_does();
-    vtable_push();
-    vtable_shift();
+    vtable_push_pmc();
+    vtable_shift_pmc();
     vtable_elements();
     method_to_array();
     method_total_mem_size();
@@ -57,7 +57,7 @@ sub op_does() {
     }
 }
 
-sub vtable_push() {
+sub vtable_push_pmc() {
     Q:PIR {
         push_eh push_sanity_handler
         $P0 = new ['ResizablePMCQueue']
@@ -73,18 +73,72 @@ sub vtable_push() {
     }
 }
 
-sub vtable_shift() {
+sub vtable_shift_pmc() {
     Q:PIR {
+        push_eh shift_sanity_handler
+        $P0 = new ['ResizablePMCQueue']
+        $P1 = box 42
+        push $P0, $P1
+        $P2 = shift $P0
+        ok(1, "can shift")
+        goto shift_sanity_end
+      shift_sanity_handler:
+        ok(0, "cannot shift");
+      shift_sanity_end:
+        pop_eh
+        is($P1, $P2)
+
+      push_eh shift_empty_handler
+        $P0 = new ['ResizablePMCQueue']
+        $P1 = shift $P0
+        ok(0, "shifted empty queue")
+        goto shift_empty_end
+      shift_empty_handler:
+        ok(1, "cannot shift empty queue")
+      shift_empty_end:
     }
 }
 
 sub vtable_elements() {
     Q:PIR {
+        $P0 = new ['ResizablePMCQueue']
+        $I0 = elements $P0
+        is($I0, 0)
+
+        $P1 = box 1
+        push $P0, $P1
+        $I0 = elements $P0
+        is($I0, 1)
+
+        $P2 = shift $P0
+        $I0 = elements $P0
+        is($I0, 0)
     }
 }
 
 sub method_to_array() {
     Q:PIR {
+        $P0 = new ['ResizablePMCQueue']
+        $P1 = box 1
+        push $P0, $P1
+        $P2 = box 2
+        push $P0, $P2
+        $P3 = box 42
+        push $P0, $P3
+
+        $P4 = $P0.'to_array'()
+        $I0 = elements $P4
+        is($I0, 3)
+
+        $S0 = typeof $P4
+        is($S0, "ResizablePMCArray")
+
+        $P5 = $P4[0]
+        is($P5, $P1)
+        $P6 = $P4[1]
+        is($P6, $P2)
+        $P7 = $P4[2]
+        is($P7, $P3)
     }
 }
 
