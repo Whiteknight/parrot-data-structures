@@ -1,5 +1,5 @@
 #include "parrot/parrot.h"
-#define FPQ_ATTRS_CONST(x) Parrot_FixedPMCQueue_Attributes * const (x)
+#define FPQ_ATTRS_CONST(x) Parrot_FixedPMCQueue_attributes * const (x)
 #define FPQ_GET_ATTRS(x) PARROT_FIXEDPMCQUEUE(x)
 #define FPQ_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
 #define FPQ_NEXT_IDX(i, s) (((i) + 1) % (s))
@@ -8,7 +8,7 @@
    push/shift access. FPQ will be implemented as a ring buffer. */
 pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     ATTR INTVAL size;
-    ATTR PMC** storage;
+    ATTR PMC **storage;
     ATTR INTVAL queue_start;
     ATTR INTVAL queue_end;
     ATTR INTVAL items;
@@ -60,6 +60,7 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         const INTVAL end = attrs->queue_end;
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
+        PMC ** const s = attrs->storage;
         if (newsize <= 0)
             newsize = items - newsize;  /* by vague analogy with negatively indexing from end */
         if (newsize < items)
@@ -140,8 +141,9 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         const INTVAL start = attrs->queue_start;
         const INTVAL end = attrs->queue_end;
         PMC ** const s = attrs->storage;
-        VTABLE_set_integer_native(INTERP, newarray, size);
         INTVAL i = 0, ptr = start;
+
+        VTABLE_set_integer_native(INTERP, newarray, size);
         while (ptr != end) {
             VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[ptr]);
             i++;
@@ -159,7 +161,7 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     METHOD total_mem_size() {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         INTVAL const storage_size = attrs->size * sizeof(PMC *);
-        INTVAL const struct_size = sizeof(PMC) + sizeof(Parrot_FixedPMCQueue_Attributes);
+        INTVAL const struct_size = sizeof(PMC) + sizeof(Parrot_FixedPMCQueue_attributes);
         INTVAL const total_size = storage_size + struct_size;
         RETURN(INTVAL total_size);
     }
