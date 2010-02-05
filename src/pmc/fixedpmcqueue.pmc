@@ -84,12 +84,12 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     }
 
     /* Push an item onto the queue */
-    VTABLE void push(PMC *item) {
+    VTABLE void push_pmc(PMC *item) {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         const INTVAL end = attrs->queue_end;
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
-        const PMC ** s = attrs->storage;
+        PMC ** const s = attrs->storage;
         if(size == items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: Pushed too many items");
@@ -99,19 +99,19 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     }
 
     /* Pull an item off the queue */
-    VTABLE PMC* shift() {
+    VTABLE PMC* shift_pmc() {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         const INTVAL start = attrs->queue_start;
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
-        const PMC ** s = attrs->storage;
-        const PMC * first_item = s[start];
+        PMC ** const s = attrs->storage;
+        PMC * const first_item = s[start];
         if(!items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: No items to shift");
-        attrs->queue_start = FPQ_NEXT_IDX(start, size)
+        attrs->queue_start = FPQ_NEXT_IDX(start, size);
         attrs->items--;
-        RETURN(PMC * first_item);
+        return first_item;
     }
 
     /* Is the queue non-empty? */
@@ -127,7 +127,7 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     }
 
     /* Total amount of allocated storage slots in the queue */
-    VTABLE INTVAL get_integer_native() {
+    VTABLE INTVAL get_integer() {
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         return(attrs->size);
     }
