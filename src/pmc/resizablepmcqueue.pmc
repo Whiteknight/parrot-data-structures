@@ -130,4 +130,16 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
         }
         RETURN(INTVAL size);
     }
+
+    METHOD clear() {
+        RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
+        rpq_node * root = RPQ_GET_ROOT(attrs);
+        while (root) {
+            rpq_node * const next = root->next;
+            mem_sys_free(root);
+            root = next;
+        }
+        attrs->root = NULL;
+        attrs->top = NULL;
+    }
 }

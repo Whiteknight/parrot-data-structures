@@ -15,6 +15,7 @@ sub MAIN () {
     vtable_get_bool();
     method_to_array();
     method_total_mem_size();
+    method_clear();
 }
 
 sub load_test_more() {
@@ -154,4 +155,11 @@ sub method_total_mem_size() {
         # TODO: This!
     }
 }
+
+sub method_clear() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
 
