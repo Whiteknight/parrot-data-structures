@@ -12,6 +12,7 @@ sub MAIN () {
     vtable_push_pmc();
     vtable_shift_pmc();
     vtable_elements();
+    vtable_get_bool();
     method_to_array();
     method_total_mem_size();
 }
@@ -116,6 +117,12 @@ sub vtable_elements() {
     }
 }
 
+sub vtable_get_bool() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
 sub method_to_array() {
     Q:PIR {
         $P0 = new ['ResizablePMCQueue']
@@ -144,6 +151,7 @@ sub method_to_array() {
 
 sub method_total_mem_size() {
     Q:PIR {
+        # TODO: This!
     }
 }
 
