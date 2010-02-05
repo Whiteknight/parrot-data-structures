@@ -3,6 +3,8 @@
 #define RPS_ATTRS_CONST(x) Parrot_ResizablePMCStack_attributes * const (x)
 #define RPS_GET_ATTRS(x) PARROT_RESIZABLEPMCSTACK(x)
 #define RPS_ALLOC_CHUNK() (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
+#define RPS_GET_ROOT(a) ((rps_chunk *)(a)->root_chunk)
+#define RPS_GET_TOP(a) ((rps_chunk *)(a)->top_chunk)
 
 typedef struct _rps_chunk {
     struct _rps_chunk * prev;
@@ -25,8 +27,8 @@ rps_new_chunk(rps_chunk *prev)
 /* ResizablePMCStack is a dynamically-growing First-In-Last-Out stack structure.
    It is optimized for high-throughput push/pop access. */
 pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
-    ATTR rps_chunk *root_chunk;
-    ATTR rps_chunk *top_chunk;
+    ATTR void *root_chunk;
+    ATTR void *top_chunk;
     ATTR INTVAL items;
     ATTR INTVAL numchunks;
 
@@ -42,7 +44,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     /* Destroy the PMC and free all allocated storage */
     VTABLE void destroy() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *ptr = attrs->root_chunk;
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
         while (ptr) {
             rps_chunk * const next = ptr->next;
             mem_sys_free(ptr);
@@ -53,7 +55,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     /* Mark the stack for GC */
     VTABLE void mark() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *ptr = attrs->root_chunk;
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
         while (ptr) {
             const INTVAL items = ptr->items;
             INTVAL i;
@@ -74,9 +76,9 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     }
 
     /* Push a PMC onto the stack */
-    VTABLE void push(PMC *item) {
+    VTABLE void push_pmc(PMC *item) {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk * current = attrs->top_chunk;
+        rps_chunk * current = RPS_GET_TOP(attrs);
         INTVAL idx;
         if (current->items == RPS_POINTERS_PER_CHUNK) {
             rps_chunk * const newchunk = rps_new_chunk(current);
@@ -91,9 +93,9 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     }
 
     /* Pop a PMC off the stack */
-    VTABLE PMC* pop() {
+    VTABLE PMC* pop_pmc() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *current = attrs->top_chunk;
+        rps_chunk *current =  RPS_GET_TOP(attrs);
         INTVAL idx = current->items;
         if (idx == 0)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
@@ -115,7 +117,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     /* Get the total number of elements. WARNING: O(N) */
     VTABLE INTVAL elements() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *ptr = attrs->root_chunk;
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
         INTVAL total = 0;
         while (ptr) {
             const INTVAL items = ptr->items;
@@ -128,7 +130,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     /* Get a ResizablePMCArray containing the contents of the stack */
     METHOD to_array() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *ptr = attrs->root_chunk;
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
         PMC *newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
         INTVAL i = 0;
         while (ptr) {
@@ -136,7 +138,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
             INTVAL items = ptr->items;
             INTVAL j = 0;
             for (j = 0; j < items; j++) {
-                VTABLE_set_pmc_keyed_int(INTERP, i, s[j]);
+                VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[j]);
                 i++;
             }
             ptr = ptr->next;
@@ -148,12 +150,27 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
        PMC structure and attribute structure */
     METHOD total_mem_size() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
-        rps_chunk *ptr = attrs->root_chunk;
-        INTVAL size = sizeof(PMC) + sizeof(Parrot_ResizablePMCStack_Attributes);
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
+        INTVAL size = sizeof(PMC) + sizeof(Parrot_ResizablePMCStack_attributes);
         while (ptr) {
-            size += sizeof(rps_chunk)
+            size += sizeof(rps_chunk);
             ptr = ptr->next;
         }
-        return size;
+        RETURN(INTVAL size);
+    }
+
+    METHOD clear() {
+        RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
+        rps_chunk *ptr = RPS_GET_ROOT(attrs);
+        rps_chunk * const newchunk = rps_new_chunk(NULL);
+        while (ptr) {
+            rps_chunk * const next = ptr->next;
+            mem_sys_free(ptr);
+            ptr = next;
+        }
+        attrs->root_chunk = newchunk;
+        attrs->top_chunk = newchunk;
+        attrs->items = 0;
+        attrs->numchunks = 0;
     }
 }

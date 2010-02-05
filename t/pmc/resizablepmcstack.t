@@ -8,6 +8,15 @@ sub MAIN () {
     ok(1);
 
     load_linalg_group();
+    op_new();
+    op_does();
+    op_typeof();
+    vtable_push_pmc();
+    vtable_pop_pmc();
+    vtable_elements();
+    method_to_array();
+    method_total_mem_size();
+    method_clear();
 }
 
 sub load_test_more() {
@@ -28,3 +37,58 @@ sub load_linalg_group() {
      has_pds_group:
     };
 }
+
+sub op_new() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub op_does() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub op_typeof() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub vtable_push_pmc() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub vtable_pop_pmc() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub vtable_elements() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub method_to_array() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub method_total_mem_size() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
+sub method_clear() {
+    Q:PIR {
+        # TODO: This!
+    }
+}
+
