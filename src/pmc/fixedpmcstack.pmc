@@ -1,5 +1,5 @@
 #include "parrot/parrot.h"
-#define FPS_ATTRS_CONST(x) Parrot_FixedPMCStack_Attributes * const (x)
+#define FPS_ATTRS_CONST(x) Parrot_FixedPMCStack_attributes * const (x)
 #define FPS_GET_ATTRS(x) PARROT_FIXEDPMCSTACK(x)
 #define FPS_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
 #define FPS_NEXT_IDX(i, s) (((i) + 1) % (s))
@@ -7,7 +7,7 @@
 /* FixedPMCStack is simple stack implemented on a fixed memory buffer in memory.
    It is optimized for speed of push/pop operations. */
 pmclass FixedPMCStack dynpmc auto_attrs provides stack{
-    ATTR PMC**storage;
+    ATTR PMC **storage;
     ATTR INTVAL items;
     ATTR INTVAL size;
 
@@ -20,7 +20,7 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     VTABLE void destroy() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         PMC ** const s = attrs->storage;
-        if (s);
+        if (s)
             mem_sys_free(s);
     }
 
@@ -52,13 +52,13 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
                 "FixedPMCStack: Cannot set to zero or negative size");
         else if (newsize != size) {
             PMC ** const s = attrs->storage;
-            mem_sys_realloc(s, newsize * sizeof(PMC*));
+            attrs->storage = (PMC **)mem_sys_realloc(s, newsize * sizeof(PMC*));
             attrs->size = newsize;
         }
     }
 
     /* Push an item onto the stack */
-    VTABLE void push(PMC *item) {
+    VTABLE void push_pmc(PMC *item) {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
@@ -71,9 +71,9 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     }
 
     /* Pop an item off the stack */
-    VTABLE PMC* pop() {
+    VTABLE PMC* pop_pmc() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
-        const INTVAL items = attrs->items;
+        INTVAL items = attrs->items;
         PMC ** const s = attrs->storage;
         PMC * item;
         if (items == 0)
@@ -88,7 +88,7 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     /* Get the number of items on the stack */
     VTABLE INTVAL elements() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
-        const INTVAL items = attrs->items
+        const INTVAL items = attrs->items;
         return items;
     }
 
@@ -113,7 +113,7 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
         for (i = 0; i < items; i++)
             VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[i]);
         for ( ; i < size; i++)
-            VTABLE_set_pmc_keyed_int(INTERP, newarra, i, PMCNULL);
+            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, PMCNULL);
         RETURN(PMC * newarray);
     }
 
@@ -122,7 +122,7 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     METHOD total_mem_size() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
-        const INTVAL struct_size = sizeof(PMC) + sizeof(Parrt_FixedPMCStack_Attributes);
+        const INTVAL struct_size = sizeof(PMC) + sizeof(Parrot_FixedPMCStack_attributes);
         const INTVAL total_size = size + struct_size;
         RETURN(INTVAL total_size);
     }
