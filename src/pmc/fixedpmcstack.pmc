@@ -1,3 +1,4 @@
+#include "parrot/parrot.h"
 #define FPS_ATTRS_CONST(x) Parrot_FixedPMCStack_Attributes * const (x)
 #define FPS_GET_ATTRS(x) PARROT_FIXEDPMCSTACK(x)
 #define FPS_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
@@ -5,7 +6,7 @@
 
 /* FixedPMCStack is simple stack implemented on a fixed memory buffer in memory.
    It is optimized for speed of push/pop operations. */
-pmclass FixedPMCStack provides stack{
+pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     ATTR PMC**storage;
     ATTR INTVAL items;
     ATTR INTVAL size;

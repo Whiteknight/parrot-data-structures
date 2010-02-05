@@ -1,5 +1,6 @@
+#include "parrot/parrot.h"
 #define RPS_POINTERS_PER_CHUNK 16
-#define RPS_ATTRS_CONST(x) Parrot_ResizablePMCStack_Attributes * const (x)
+#define RPS_ATTRS_CONST(x) Parrot_ResizablePMCStack_attributes * const (x)
 #define RPS_GET_ATTRS(x) PARROT_RESIZABLEPMCSTACK(x)
 #define RPS_ALLOC_CHUNK() (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
 
@@ -10,10 +11,11 @@ typedef struct _rps_chunk {
     PMC * storage[RPS_POINTERS_PER_CHUNK];
 } rps_chunk;
 
+static
 rps_chunk *
 rps_new_chunk(rps_chunk *prev)
 {
-    rps_chunk * newchunk = mem_sys_allocate(sizeof(rps_chunk));
+    rps_chunk * const newchunk = (rps_chunk *)mem_sys_allocate(sizeof(rps_chunk));
     newchunk->prev = prev;
     newchunk->next = NULL;
     newchunk->items = 0;
@@ -22,9 +24,9 @@ rps_new_chunk(rps_chunk *prev)
 
 /* ResizablePMCStack is a dynamically-growing First-In-Last-Out stack structure.
    It is optimized for high-throughput push/pop access. */
-pmclass ResizablePMCStack provides stack {
-    ATTR rps_chunk *root_chunk;
-    ATTR rps_chunk *top_chunk;
+pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
+    ATTR rps_chunk* root_chunk;
+    ATTR rps_chunk* top_chunk;
     ATTR INTVAL items;
     ATTR INTVAL numchunks;
 

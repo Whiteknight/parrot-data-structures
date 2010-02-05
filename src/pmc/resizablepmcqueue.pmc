@@ -1,3 +1,4 @@
+#include "parrot/parrot.h"
 #define RPQ_ATTRS_CONST(x) Parrot_ResizablePMCQueue_Attributes * const (x)
 #define RPQ_GET_ATTRS(x) PARROT_RESIZABLEPMCQUEUE(x)
 
@@ -6,15 +7,17 @@ typedef struct _rpq_node {
     PMC *item;
 } rpq_node;
 
-rpq_node
+static
+rpq_node *
 rpq_alloc_new_node(PMC *item)
 {
-    rpq_node * const newnode = mem_sys_alloc(sizeof(rpq_node));
-    rpq_node->next = NULL;
-    rpq_node->item = item;
-    return rpq_node;
+    rpq_node * const newnode = (rpq_node *)mem_sys_allocate(sizeof(rpq_node));
+    newnode->next = NULL;
+    newnode->item = item;
+    return newnode;
 }
 
+static
 PMC *
 rpq_free_node(rpq_node *node)
 {
@@ -23,9 +26,9 @@ rpq_free_node(rpq_node *node)
     return item;
 }
 
-pmclass ResizablePMCQueue provides queue {
-    ATTR rpq_node * root;
-    ATTR rpq_node * top;
+pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
+    ATTR rpq_node* root;
+    ATTR rpq_node* top;
 
     VTABLE void init() {
         PObj_custom_mark_destroy_SETALL(SELF);

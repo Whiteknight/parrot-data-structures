@@ -1,3 +1,4 @@
+#include "parrot/parrot.h"
 #define FPQ_ATTRS_CONST(x) Parrot_FixedPMCQueue_Attributes * const (x)
 #define FPQ_GET_ATTRS(x) PARROT_FIXEDPMCQUEUE(x)
 #define FPQ_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
@@ -5,7 +6,7 @@
 
 /* FixedPMCQueue is a fixed-length FIFO queue structure. It is optimized for
    push/shift access. FPQ will be implemented as a ring buffer. */
-pmclass FixedPMCQueue provides queue {
+pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     ATTR INTVAL size;
     ATTR PMC** storage;
     ATTR INTVAL queue_start;
