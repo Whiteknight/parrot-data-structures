@@ -25,8 +25,8 @@ rps_new_chunk(rps_chunk *prev)
 /* ResizablePMCStack is a dynamically-growing First-In-Last-Out stack structure.
    It is optimized for high-throughput push/pop access. */
 pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
-    ATTR rps_chunk* root_chunk;
-    ATTR rps_chunk* top_chunk;
+    ATTR rps_chunk *root_chunk;
+    ATTR rps_chunk *top_chunk;
     ATTR INTVAL items;
     ATTR INTVAL numchunks;
 
