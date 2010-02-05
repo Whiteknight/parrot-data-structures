@@ -93,9 +93,9 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
     }
 
     /* Get the total allocated size of the stack */
-    VTABLE INTVAL get_integer_native() {
+    VTABLE INTVAL get_integer() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
-        const INTVAL size = attrs->size
+        const INTVAL size = attrs->size;
         return size;
     }
 
