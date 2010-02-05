@@ -2,3 +2,5 @@ src/pmc/*.c
 src/pmc/*.o
 src/pmc/*.h
 src/pmc/*.dump
+*.pbc
+dynext/
