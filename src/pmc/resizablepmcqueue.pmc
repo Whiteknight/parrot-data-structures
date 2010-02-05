@@ -1,6 +1,8 @@
 #include "parrot/parrot.h"
 #define RPQ_ATTRS_CONST(x) Parrot_ResizablePMCQueue_Attributes * const (x)
 #define RPQ_GET_ATTRS(x) PARROT_RESIZABLEPMCQUEUE(x)
+#define RPQ_GET_ROOT(a) ((rpq_node *)(a)->root)
+#define RPQ_GET_TOP(a) ((rpq_node *)(a)->top)
 
 typedef struct _rpq_node {
     struct _rpq_node * next;
@@ -27,8 +29,8 @@ rpq_free_node(rpq_node *node)
 }
 
 pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
-    ATTR rpq_node* root;
-    ATTR rpq_node* top;
+    ATTR void* root;
+    ATTR void* top;
 
     VTABLE void init() {
         PObj_custom_mark_destroy_SETALL(SELF);
@@ -36,7 +38,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
 
     VTABLE void destroy() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * root = attrs->root;
+        rpq_node * root = RPQ_GET_ROOT(attrs);
         while (root) {
             rpq_node * const next = root->next;
             mem_sys_free(root);
@@ -46,7 +48,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
 
     VTABLE void mark() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * root = attrs->root;
+        rpq_node * root = RPQ_GET_ROOT(attrs);
         while (root) {
             Parrot_gc_mark_PMC_alive(INTERP, root);
             root = root->next;
@@ -62,19 +64,19 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
     VTABLE void visit(PMC *info) {
     }
 
-    VTABLE void push(PMC *item) {
+    VTABLE void push_pmc(PMC *item) {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
         rpq_node * const node = rpq_alloc_new_node(item);
-        rpq_node * const top = attrs->top;
+        rpq_node * const top = RPQ_GET_TOP(attrs);
         if (!top)
             attrs->root = node;
         top->next = node;
         attrs->top = node;
     }
 
-    VTABLE PMC* shift() {
+    VTABLE PMC* shift_pmc() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * const root = attrs->root;
+        rpq_node * const root = RPQ_GET_ROOT(attrs);
         if (!root)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "ResizablePMCQueue: Shift from empty queue");
@@ -85,7 +87,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
     /* Get the number of items in the queue. WARNING: O(n) */
     VTABLE INTVAL elements() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * const root = attrs->root;
+        rpq_node * const root = RPQ_GET_ROOT(attrs);
         INTVAL count = 0;
         while (root) {
             count++;
@@ -102,7 +104,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
 
     METHOD to_array() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * const root = attrs->root;
+        rpq_node * const root = RPQ_GET_ROOT(attrs);
         PMC * newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
         INTVAL idx = 0;
         while (root) {
@@ -115,7 +117,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
 
     METHOD total_mem_size() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
-        rpq_node * const root = attrs->root;
+        rpq_node * const root = RPQ_GET_ROOT(attrs);
         INTVAL size = sizeof(PMC) + sizeof(Parrot_ResizablePMCQueue_Attributes);
         while (root) {
             size += sizeof(rpq_node);
