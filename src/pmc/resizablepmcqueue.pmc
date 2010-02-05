@@ -94,6 +94,12 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
         return count;
     }
 
+    VTABLE INTVAL get_bool() {
+        const INTVAL elems = VTABLE_elements(INTERP, SELF);
+        const INTVAL has_elems = (elems >= 0);
+        return has_elems;
+    }
+
     METHOD to_array() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
         rpq_node * const root = attrs->root;
