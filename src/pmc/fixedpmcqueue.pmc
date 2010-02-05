@@ -60,8 +60,10 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         const INTVAL end = attrs->queue_end;
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
+        if (newsize <= 0)
+            newsize = items - newsize;  /* by vague analogy with negatively indexing from end */
         if (newsize < items)
-            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTIO_OUT_OF_BOUNDS,
+            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "FixedPMCQueue: Cannot shrink size with items in queue");
         else if (newsize != size) {
             INTVAL ptr = start;
@@ -106,9 +108,15 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         if(!items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: No items to shift");
-        attrs->queue_start = FPQ_NEXT_IDX(end, size)
+        attrs->queue_start = FPQ_NEXT_IDX(start, size)
         attrs->items--;
         RETURN(PMC * first_item);
+    }
+
+    /* Is the queue non-empty? */
+    VTABLE INTVAL get_bool() {
+        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
+        return attrs->items > 0;
     }
 
     /* Number of items in the queue */
