@@ -43,55 +43,127 @@ sub load_linalg_group() {
 
 sub op_new() {
     Q:PIR {
-        # TODO: This!
+        push_eh new_sanity_failure
+        $P0 = new ['FixedPMCQueue']
+        ok(1)
+        goto new_sanity_end
+      new_sanity_failure:
+        ok(0)
+        new_sanity_end:
+
+        $I0 = isnull $P0
+        is($I0, 1)
     }
 }
 
 sub op_does() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $I0 = does $P0, 'queue'
+        is($I0, 1)
+        $I0 = does $P0, "jibbajabba"
+        is($I0, 0)
     }
 }
 
 sub op_typeof() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $S0 = typeof $P0
+        is($S0, 'FixedPMCQueue')
     }
 }
 
 sub vtable_set_integer_native() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        push_eh set_integer_sanity_error
+        $P0 = 5
+        ok(1)
+        goto set_integer_sanity_end
+      set_integer_sanity_error:
+        ok(0)
+      set_integer_sanity_end:
     }
 }
 
 sub vtable_push_pmc() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $P0 = 5
+        $P1 = box 1
+        push_eh push_pmc_sanity_error
+        push $P0, $P1
+        ok(1)
+        goto push_pmc_sanity_end
+      push_pmc_sanity_error:
+        ok(0)
+      push_pmc_sanity_end:
     }
 }
 
 sub vtable_shift_pmc() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $P0 = 5
+        $P1 = box 1
+        push $P0, $P1
+        $P2 = shift $P0
+        is($P1, $P2)
     }
 }
 
 sub vtable_elements() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $I0 = elements $P0
+        is($I0, 0)
+
+        $P0 = 5
+        $I0 = elements $P0
+        is($I0, 0)
+
+        $P1 = box 1
+        push $P0, $P1
+        $I0 = elements $P0
+        is($I0, 1)
+
+        $P2 = shift $P0
+        $I0 = elements $P0
+        is($I0, 0)
     }
 }
 
 sub vtable_get_bool() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $I0 = istrue $P0
+        is($I0, 0)
+
+        $P0 = 5
+        $I0 = istrue $P0
+        is($I0, 0)
+
+        $P1 = box 1
+        push $P0, $P1
+        $I0 = istrue $P0
+        is($I0, 1)
+
+        $P2 = shift $P0
+        $I0 = istrue $P0
+        is($I0, 0)
     }
 }
 
 sub vtable_get_integer() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['FixedPMCQueue']
+        $I0 = $P0
+        is($I0, 0)
+
+        $P0 = 5
+        $I0 = $P0
+        is($I0, 5)
     }
 }
 

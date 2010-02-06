@@ -60,24 +60,23 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         const INTVAL end = attrs->queue_end;
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
-        PMC ** const s = attrs->storage;
-        if (newsize <= 0)
-            newsize = items - newsize;  /* by vague analogy with negatively indexing from end */
         if (newsize < items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "FixedPMCQueue: Cannot shrink size with items in queue");
         else if (newsize != size) {
             INTVAL ptr = start;
+            PMC ** const oldstorage = attrs->storage;
             PMC ** newstorage = FPQ_ALLOCATE(newsize);
             INTVAL i = 0;
             while (ptr != end) {
-                newstorage[i] = s[ptr];
+                newstorage[i] = oldstorage[ptr];
                 ptr = FPQ_NEXT_IDX(ptr, size);
                 i++;
             }
-            if (s)
-                mem_sys_free(s);
+            if (oldstorage)
+                mem_sys_free(oldstorage);
             attrs->storage = newstorage;
+            attrs->size = newsize;
             attrs->queue_start = 0;
             attrs->queue_end = i;
         }
