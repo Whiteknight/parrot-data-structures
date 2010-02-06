@@ -43,6 +43,7 @@ See F<runtime/library/distutils.pir>.
     $P2 = new 'Hash'
     $P3 = split "\n", <<'SOURCES'
 src/pmc/resizablepmcstack.pmc
+src/pmc/resizablepmcstack2.pmc
 src/pmc/fixedpmcstack.pmc
 src/pmc/resizablepmcqueue.pmc
 src/pmc/fixedpmcqueue.pmc
