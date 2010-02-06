@@ -7,7 +7,7 @@ sub MAIN () {
     plan(1);
     ok(1);
 
-    load_linalg_group();
+    load_pds_group();
     op_new();
     op_does();
     op_typeof();
@@ -28,7 +28,7 @@ sub load_test_more() {
     };
 }
 
-sub load_linalg_group() {
+sub load_pds_group() {
     Q:PIR {
         .local pmc pds
         pds = loadlib "./dynext/pds_group"
@@ -40,37 +40,77 @@ sub load_linalg_group() {
 
 sub op_new() {
     Q:PIR {
-        # TODO: This!
+        push_eh op_new_sanity_error
+        $P0 = new ['ResizablePMCStack']
+        ok(1)
+        goto op_new_sanity_end
+      op_new_sanity_error:
+        ok(0)
+      op_new_sanity_end:
+        pop_eh
+
+        $I0 = isnull $P0
+        is($I0, 0)
     }
 }
 
 sub op_does() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['ResizablePMCStack']
+        $I0 = does $P0, "stack"
+        is($I0, 1)
+        $I0 = does $P0, "jibbajabba"
+        is($I0, 0)
     }
 }
 
 sub op_typeof() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['ResizablePMCStack']
+        $S0 = typeof $P0
+        is($S0, 'ResizablePMCStack')
     }
 }
 
 sub vtable_push_pmc() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['ResizablePMCStack']
+        $P1 = box 1
+        push_eh push_pmc_sanity_error
+        push $P0, $P1
+        ok(1)
+        goto push_pmc_sanity_end
+      push_pmc_sanity_error:
+        ok(0)
+      push_pmc_sanity_end:
+        pop_eh
     }
 }
 
 sub vtable_pop_pmc() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['ResizablePMCStack']
+        $P1 = box 1
+        push $P0, $P1
+        $P2 = pop $P0
+        is($P1, $P2)
     }
 }
 
 sub vtable_elements() {
     Q:PIR {
-        # TODO: This!
+        $P0 = new ['ResizablePMCStack']
+        $I0 = elements $P0
+        is($I0, 0)
+
+        $P1 = box 1
+        push $P0, $P1
+        $I0 = elements $P0
+        is($I0, 1)
+
+        $P2 = pop $P0
+        $I0 = elements $P0
+        is($I0, 0)
     }
 }
 

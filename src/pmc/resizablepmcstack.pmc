@@ -89,7 +89,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
         idx = current->items;
         current->storage[idx] = item;
         idx++;
-        current->items = idx++;
+        current->items = idx;
     }
 
     /* Pop a PMC off the stack */
@@ -110,6 +110,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
                 last->next = NULL;
                 attrs->top_chunk = last;
             }
+            RPS_GET_TOP(attrs)->items--;
             return item;
         }
     }
