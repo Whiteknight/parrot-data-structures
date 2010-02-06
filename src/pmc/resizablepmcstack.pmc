@@ -24,6 +24,13 @@ rps_new_chunk(rps_chunk *prev)
     return newchunk;
 }
 
+static
+void
+rps_free_chunk(rps_chunk *chunk)
+{
+    mem_sys_free(chunk);
+}
+
 /* ResizablePMCStack is a dynamically-growing First-In-Last-Out stack structure.
    It is optimized for high-throughput push/pop access. */
 pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
@@ -102,15 +109,26 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
                 "ResizablePMCStack: Pop from empty stack");
         idx--;
         {
-            PMC * item = current->storage[idx];
+            PMC * const item = current->storage[idx];
             rps_chunk * const last = current->prev;
-            /* Popped the last item off this chunk. If this is the first chunk,
-               the last is NULL, so don't take the chunk off the list.*/
-            if (idx == 0 && last != NULL) {
-                last->next = NULL;
-                attrs->top_chunk = last;
+            /* Popped the last item off this chunk. */
+            if (idx == 0) {
+                /* We have another chunk. Pop off the current chunk and move
+                   to the last one */
+                if(last != NULL) {
+                    last->next = NULL;
+                    rps_free_chunk(current);
+                    current = last;
+                    attrs->top_chunk = current;
+                    PARROT_ASSERT(current->items == RPS_POINTERS_PER_CHUNK);
+                }
+                /* We're on the first chunk. The stack is now empty */
+                else
+                    current->items = 0;
             }
-            RPS_GET_TOP(attrs)->items--;
+            else
+                current->items = idx;
+
             return item;
         }
     }
