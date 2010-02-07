@@ -137,7 +137,7 @@
     $N1 = time
     $N2 = $N1 - $N0
 
-    print_partial_result(targettype, "push/pop rapidfire", numtrials, $N2)
+    print_partial_result(targettype, "push/shift rapidfire", numtrials, $N2)
 .end
 
 
@@ -149,7 +149,7 @@
 
 
     $I0 = length operation
-    $I1 = 20 - $I0
+    $I1 = 25 - $I0
     $S0 = repeat " ", $I1
     print "("
     print targettype

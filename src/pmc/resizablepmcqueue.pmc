@@ -68,8 +68,9 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
         rpq_node * const node = rpq_alloc_new_node(value);
         rpq_node * const top = RPQ_GET_TOP(attrs);
+        rpq_node * const root = RPQ_GET_ROOT(attrs);
         /* If we don't have a top, it's because the queue is empty. */
-        if (!top) {
+        if (!root) {
             attrs->root = node;
             attrs->top = node;
         } else {
