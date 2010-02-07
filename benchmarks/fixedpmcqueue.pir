@@ -5,6 +5,7 @@
     exit 1
   has_pds_group:
     push_shift_benchmarks("FixedPMCQueue", 100000, 1)
+    push_shift_rapidfire("FixedPMCQueue",  100000, 1)
     say ""
 .end
 

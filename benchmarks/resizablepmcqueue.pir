@@ -5,6 +5,7 @@
     exit 1
   has_pds_group:
     push_shift_benchmarks("ResizablePMCQueue", 100000, 0)
+    push_shift_rapidfire("ResizablePMCQueue",  100000, 0)
     say ""
 .end
 

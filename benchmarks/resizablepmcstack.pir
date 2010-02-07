@@ -5,6 +5,7 @@
     exit 1
   has_pds_group:
     push_pop_benchmarks("ResizablePMCStack", 1000000, 0)
+    push_pop_rapidfire("ResizablePMCStack",  1000000, 0)
     say ""
 .end
 

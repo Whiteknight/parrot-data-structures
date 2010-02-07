@@ -5,6 +5,7 @@
     exit 1
   has_pds_group:
     push_pop_benchmarks("FixedPMCStack", 1000000, 1)
+    push_pop_rapidfire("FixedPMCStack",  1000000, 1)
     say ""
 .end
 
