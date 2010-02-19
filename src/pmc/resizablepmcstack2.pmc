@@ -98,7 +98,7 @@ pmclass ResizablePMCStack2 dynpmc auto_attrs provides stack {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
         const INTVAL items = attrs->items;
         PMC ** const s = attrs->storage;
-        PMC * const newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
+        PMC * const newarray = Parrot_pmc_new(INTERP, enum_class_ResizablePMCArray);
         INTVAL i = 0;
         for (i = 0; i < items; i++)
             VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[i]);

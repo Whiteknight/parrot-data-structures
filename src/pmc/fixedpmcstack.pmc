@@ -104,7 +104,7 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
        filled with PMCNULL */
     METHOD to_array() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
-        PMC * const newarray = pmc_new(INTERP, enum_class_FixedPMCArray);
+        PMC * const newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
         const INTVAL size = attrs->size;
         const INTVAL items = attrs->items;
         PMC ** const s = attrs->storage;
