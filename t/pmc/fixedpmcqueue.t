@@ -5,7 +5,7 @@ MAIN();
 sub MAIN () {
     load_test_more();
     plan(1);
-    ok(1);
+    ok(19);
     load_linalg_group();
 
     op_new();
