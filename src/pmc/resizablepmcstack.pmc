@@ -150,7 +150,7 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
     METHOD to_array() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
         rps_chunk *ptr = RPS_GET_ROOT(attrs);
-        PMC *newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
+        PMC *newarray = Parrot_pmc_new(INTERP, enum_class_ResizablePMCArray);
         INTVAL i = 0;
         while (ptr) {
             PMC ** const s = ptr->storage;

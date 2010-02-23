@@ -134,7 +134,7 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     /* Convert the queue to a FixedPMCArray. The array will have the same
        length as the queue, all additional spaces will contain PMCNULL */
     METHOD to_array() {
-        PMC * newarray = pmc_new(INTERP, enum_class_FixedPMCArray);
+        PMC * newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
         const INTVAL start = attrs->queue_start;

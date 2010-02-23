@@ -4,8 +4,7 @@ MAIN();
 
 sub MAIN () {
     load_test_more();
-    plan(1);
-    ok(11);
+    plan(10);
 
     load_pds_group();
     op_new();
@@ -42,10 +41,10 @@ sub op_new() {
     Q:PIR {
         push_eh op_new_sanity_error
         $P0 = new ['ResizablePMCStack2']
-        ok(1)
+        ok(1, "could create RPS2")
         goto op_new_sanity_end
       op_new_sanity_error:
-        ok(0)
+        ok(0, "could not create RPS2")
       op_new_sanity_end:
         pop_eh
 

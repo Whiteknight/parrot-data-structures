@@ -4,8 +4,7 @@ MAIN();
 
 sub MAIN () {
     load_test_more();
-    plan(1);
-    ok(19);
+    plan(18);
     load_linalg_group();
 
     op_new();
@@ -45,11 +44,11 @@ sub op_new() {
     Q:PIR {
         push_eh new_sanity_failure
         $P0 = new ['FixedPMCQueue']
-        ok(1)
+        ok(1, "Could create FPQ")
         goto new_sanity_end
       new_sanity_failure:
-        ok(0)
-        new_sanity_end:
+        ok(0, "Could not create FPQ")
+      new_sanity_end:
 
         $I0 = isnull $P0
         is($I0, 1)

@@ -111,7 +111,7 @@ pmclass ResizablePMCQueue dynpmc auto_attrs provides queue {
     METHOD to_array() {
         RPQ_ATTRS_CONST(attrs) = RPQ_GET_ATTRS(SELF);
         rpq_node * root = RPQ_GET_ROOT(attrs);
-        PMC * newarray = pmc_new(INTERP, enum_class_ResizablePMCArray);
+        PMC * newarray = Parrot_pmc_new(INTERP, enum_class_ResizablePMCArray);
         INTVAL idx = 0;
         while (root) {
             VTABLE_set_pmc_keyed_int(INTERP, newarray, idx, root->item);
