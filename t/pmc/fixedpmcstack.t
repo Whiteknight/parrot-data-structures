@@ -42,15 +42,14 @@ sub load_linalg_group() {
 sub op_new() {
     Q:PIR {
         push_eh op_new_sanity
+        $I0 = 0
         $P0 = new ['FixedPMCStack']
-        ok(1)
-        goto op_new_sanity_end
+        $I0 = 1
       op_new_sanity:
-        ok(0)
-      op_new_sanity_end:
-        $I0 = isnull $P0
-        is($I0, 0)
         pop_eh
+        ok($I0)
+        $I0 = isnull $P0
+        ok($I0)
     }
 }
 
@@ -77,14 +76,13 @@ sub op_does() {
 sub vtable_set_integer_native() {
     Q:PIR {
         push_eh set_integer_native_sanity
+        $I0 = 0
         $P0 = new ['FixedPMCStack']
         $P0 = 5
-        ok(1)
-        goto _end
+        $I0 = 1
       set_integer_native_sanity:
-        ok(0)
-      _end:
         pop_eh
+        ok($I0)
     }
 }
 
@@ -106,13 +104,12 @@ sub vtable_push_pmc() {
         $P0 = 5
         $P1 = box 1
         push_eh push_pmc_sanity
+        $I0 = 0
         push $P0, $P1
-        ok(1, "push_pmc vtable exists")
-        goto sanity_end
+        $I0 = 1
       push_pmc_sanity:
-        ok(0, "push_pmc vtable does not exist")
-      sanity_end:
         pop_eh
+        ok($I0, "push_pmc vtable does not exist")
 
         $P0 = new ['FixedPMCStack']
         $P0 = 5
