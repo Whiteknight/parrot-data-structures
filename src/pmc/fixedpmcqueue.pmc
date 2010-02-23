@@ -1,11 +1,42 @@
 #include "parrot/parrot.h"
-#define FPQ_ATTRS_CONST(x) Parrot_FixedPMCQueue_attributes * const (x)
-#define FPQ_GET_ATTRS(x) PARROT_FIXEDPMCQUEUE(x)
-#define FPQ_ALLOCATE(len) (PMC **)mem_sys_allocate((len) * sizeof(PMC *))
-#define FPQ_NEXT_IDX(i, s) (((i) + 1) % (s))
+#define self                    (*attrs)
+#define FPQ_DECL_ATTRS(SELF)    Parrot_FixedPMCQueue_attributes * const attrs = PARROT_FIXEDPMCQUEUE(SELF)
+#define FPQ_IDX_ADD(x, offset)  (((x) + (offset)) % self.size)
+#define FPQ_IDX_DIFF(x, y)      (((x) + self.size - (y)) % self.size)
+#define FPQ_IDX_INCR(x)         ((x) = FPQ_IDX_ADD((x), 1))
+#define FPQ_IDXF_INCR(f)        FPQ_IDX_INCR(self.f)
+#define FPQ_ITEMS()             (self.items)
+#define FPQ_EMPTY()             (self.items == 0)
+#define FPQ_FULL()              (self.items == self.size)
+#define FPQ_ALLOCATE(len)       mem_allocate_n_typed(len, PMC *)
+#define FPQ_REALLOCATE(p, len)  mem_realloc_n_typed(p, len, PMC *)
+#define FPQ_ITERATE(index,func) { \
+        if (self.items == self.size) { \
+            INTVAL index; \
+            for (index = 0; index < self.size; index++) { \
+                func; \
+            } \
+        } else \
+        if (self.queue_start > self.queue_end) { \
+            INTVAL index; \
+            for (index = self.queue_start; index < self.size; index++) { \
+                func; \
+            } \
+            for (index = 0; index < self.queue_end; index++) { \
+                func; \
+            } \
+        } else { \
+            INTVAL index; \
+            for (index = self.queue_start; index < self.queue_end; index++) { \
+                func; \
+            } \
+        } \
+    }
 
-/* FixedPMCQueue is a fixed-length FIFO queue structure. It is optimized for
-   push/shift access. FPQ will be implemented as a ring buffer. */
+/*
+ * FixedPMCQueue is a fixed-length FIFO queue structure. It is optimized for
+ * push/shift access. FPQ will be implemented as a ring buffer.
+ */
 pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     ATTR INTVAL size;
     ATTR PMC **storage;
@@ -22,25 +53,17 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
 
     /* Destroy the PMC. Free allocated storage */
     VTABLE void destroy() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        PMC ** const s = attrs->storage;
-        if (s)
-           mem_sys_free(s);
+        FPQ_DECL_ATTRS(SELF);
+        if (self.storage)
+           mem_sys_free(self.storage);
     }
 
     /* Mark the PMC for GC. */
     VTABLE void mark() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        PMC ** const s = attrs->storage;
-        const INTVAL size = attrs->size;
-        if (s && size) {
-            INTVAL ptr = attrs->queue_start;
-            const INTVAL end = attrs->queue_end;
-            while (ptr != end) {
-                Parrot_gc_mark_PMC_alive(INTERP, s[ptr]);
-                ptr = FPQ_NEXT_IDX(ptr, size);
-            }
-        }
+        FPQ_DECL_ATTRS(SELF);
+        PMC ** const s = self.storage;
+        if (s)
+            FPQ_ITERATE(i, Parrot_gc_mark_PMC_alive(INTERP, s[i]));
     }
 
     VTABLE void freeze(PMC *info) {
@@ -50,116 +73,106 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     }
 
     VTABLE void visit(PMC *info) {
+        FPQ_DECL_ATTRS(SELF);
+        PMC ** const storage = self.storage;
+        FPQ_ITERATE(i, VISIT_PMC(INTERP, info, storage[i]));
     }
 
     /* Size the queue. Cannot shrink the queue smaller than the number of items
        currently in the queue. */
     VTABLE void set_integer_native(INTVAL newsize) {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        const INTVAL start = attrs->queue_start;
-        const INTVAL end = attrs->queue_end;
-        const INTVAL size = attrs->size;
-        const INTVAL items = attrs->items;
-        if (newsize < items)
+        FPQ_DECL_ATTRS(SELF);
+        const INTVAL start = self.queue_start;
+        const INTVAL end = self.queue_end;
+        const INTVAL size = self.size;
+        if (newsize < FPQ_ITEMS())
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "FixedPMCQueue: Cannot shrink size with items in queue");
-        else if (newsize != size) {
-            INTVAL ptr = start;
-            PMC ** const oldstorage = attrs->storage;
-            PMC ** newstorage = FPQ_ALLOCATE(newsize);
-            INTVAL i = 0;
-            while (ptr != end) {
-                newstorage[i] = oldstorage[ptr];
-                ptr = FPQ_NEXT_IDX(ptr, size);
-                i++;
+        if (newsize != size)
+            if (start == 0) {
+                FPQ_REALLOCATE(self.storage, newsize);
+                self.size = newsize;
+            } else {
+                INTVAL ptr = start;
+                PMC ** const oldstorage = self.storage;
+                PMC ** newstorage = FPQ_ALLOCATE(newsize);
+                INTVAL i = 0;
+                while (ptr != end) {
+                    newstorage[i] = oldstorage[ptr];
+                    FPQ_IDX_INCR(ptr);
+                    i++;
+                }
+                if (oldstorage)
+                    mem_sys_free(oldstorage);
+                self.storage = newstorage;
+                self.size = newsize;
+                self.queue_start = 0;
+                self.queue_end = i;
             }
-            if (oldstorage)
-                mem_sys_free(oldstorage);
-            attrs->storage = newstorage;
-            attrs->size = newsize;
-            attrs->queue_start = 0;
-            attrs->queue_end = i;
-        }
     }
 
     /* Push an item onto the queue */
     VTABLE void push_pmc(PMC *item) {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        const INTVAL end = attrs->queue_end;
-        const INTVAL size = attrs->size;
-        const INTVAL items = attrs->items;
-        PMC ** const s = attrs->storage;
-        if(size == items)
+        FPQ_DECL_ATTRS(SELF);
+        if (self.size == self.items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: Pushed too many items");
-        s[end] = item;
-        attrs->queue_end = FPQ_NEXT_IDX(end, size);
-        attrs->items++;
+        self.storage[self.queue_end] = item;
+        FPQ_IDX_INCR(self.queue_end);
+        self.items++;
     }
 
     /* Pull an item off the queue */
     VTABLE PMC* shift_pmc() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        const INTVAL start = attrs->queue_start;
-        const INTVAL size = attrs->size;
-        const INTVAL items = attrs->items;
-        PMC ** const s = attrs->storage;
-        PMC * const first_item = s[start];
-        if(!items)
+        FPQ_DECL_ATTRS(SELF);
+        PMC * first_item;
+        if(!self.items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: No items to shift");
-        attrs->queue_start = FPQ_NEXT_IDX(start, size);
-        attrs->items--;
+        first_item = self.storage[self.queue_start];
+        FPQ_IDX_INCR(self.queue_start);
+        self.items--;
         return first_item;
     }
 
     /* Is the queue non-empty? */
     VTABLE INTVAL get_bool() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        return attrs->items > 0;
+        FPQ_DECL_ATTRS(SELF);
+        return !FPQ_EMPTY();
     }
 
     /* Number of items in the queue */
     VTABLE INTVAL elements() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        return(attrs->items);
+        FPQ_DECL_ATTRS(SELF);
+        return FPQ_ITEMS();
     }
 
     /* Total amount of allocated storage slots in the queue */
     VTABLE INTVAL get_integer() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        return(attrs->size);
+        FPQ_DECL_ATTRS(SELF);
+        return(self.size);
     }
 
     /* Convert the queue to a FixedPMCArray. The array will have the same
        length as the queue, all additional spaces will contain PMCNULL */
     METHOD to_array() {
         PMC * newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        const INTVAL size = attrs->size;
-        const INTVAL start = attrs->queue_start;
-        const INTVAL end = attrs->queue_end;
-        PMC ** const s = attrs->storage;
-        INTVAL i = 0, ptr = start;
+        FPQ_DECL_ATTRS(SELF);
+        const INTVAL size = self.size;
+        PMC ** const s = self.storage;
+        INTVAL i = 0;
 
         VTABLE_set_integer_native(INTERP, newarray, size);
-        while (ptr != end) {
-            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[ptr]);
-            i++;
-            ptr = FPQ_NEXT_IDX(ptr, size);
-        }
-        while (i < size) {
-            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, PMCNULL);
-            i++;
-        }
+        FPQ_ITERATE(ptr, VTABLE_set_pmc_keyed_int(INTERP, newarray, i++, s[ptr]));
+        while (i < size) VTABLE_set_pmc_keyed_int(INTERP, newarray, i++, PMCNULL);
         RETURN(PMC* newarray);
     }
 
     /* Get the total size of the queue in memory, in bytes, including the PMC
        structure allocation size */
     METHOD total_mem_size() {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        INTVAL const storage_size = attrs->size * sizeof(PMC *);
+        FPQ_DECL_ATTRS(SELF);
+        INTVAL const storage_size = self.size * sizeof(PMC *);
         INTVAL const struct_size = sizeof(PMC) + sizeof(Parrot_FixedPMCQueue_attributes);
         INTVAL const total_size = storage_size + struct_size;
         RETURN(INTVAL total_size);
@@ -167,20 +180,19 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
 
     /* Clear the queue, optionally resizing it */
     METHOD clear(INTVAL newsize :optional, INTVAL has_size :opt_flag) {
-        FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
-        INTVAL const size = attrs->size;
-        PMC ** const s = attrs->storage;
+        FPQ_DECL_ATTRS(SELF);
+        INTVAL const size = self.size;
         if (has_size) {
             if (newsize <= 0)
                 Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: Cannot set to zero or negative size");
-            if (s)
-                mem_sys_free(s);
-            attrs->storage = FPQ_ALLOCATE(newsize);
-            attrs->size = newsize;
+            if (self.storage)
+                mem_sys_free(self.storage);
+            self.storage = FPQ_ALLOCATE(newsize);
+            self.size = newsize;
         }
-        attrs->queue_start = 0;
-        attrs->queue_end = 0;
-        attrs->items = 0;
+        self.queue_start = 0;
+        self.queue_end = 0;
+        FPQ_ITEMS() = 0;
     }
 }
