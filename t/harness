@@ -16,23 +16,26 @@ sub MAIN () {
     my $total_files := 0;
     my $failed_files:= 0;
 
+    my $longest_file := get_longest_file(@ARGS);
+
     for @ARGS {
         my $filename := $_;
         $total_files++;
 
-        print($filename ~ '...');
+        print($filename);
+        my $length := pir::length__IS($filename);
+        my $elipses_length := $longest_file - $length + 3;
+        my $elipses := pir::repeat__SSI(".", $elipses_length);
+        print(" " ~ $elipses ~ " ");
 
         my $file        := slurp($_);
         my $test_output := qx('parrot-nqp', $filename);
-        my $output      := split("\n",$test_output);
-        my @plan_parts  := split('..',$output[0]);
+        my $output      := split("\n", $test_output);
+        my @plan_parts  := split('..', $output[0]);
 
         my $num_tests   := @plan_parts[1];
-
         my $curr_test   := 0;
-
         my $passed      := 0;
-
         my $failed      := 0;
 
         $output.shift;  # we don't need the plan anymore
@@ -59,33 +62,42 @@ sub MAIN () {
                 }
             }
         }
-        if $failed {
-            say('failed ' ~ $failed ~ '/' ~ $num_tests ~ ' tests');
-        }
-        else {
-            if @plan_parts[0] != 1 || $num_tests < 0 {
-                say('INVALID PLAN: ' ~ join('',@plan_parts));
-                $failed_files++;
-            }
-            else {
-                say('passed ' ~ $curr_test ~ ' tests');
-            }
-        }
         $total_passed := $total_passed + $passed;
         $total_failed := $total_failed + $failed;
+
+        if $failed {
+            say('not ok (' ~ $passed ~ '/' ~ $curr_test ~ ')');
+        }
+        else {
+            say("ok");
+        }
+        if @plan_parts[0] != 1 || $num_tests < 0 {
+            say("Bad Plan. '" ~ $output[0] ~ "'");
+        }
         if $num_tests != $curr_test {
-            say("Planned to run " ~ $num_tests ~ " tests but ran " ~ $curr_test ~ " tests");
-            say("FAILED");
+            say("Aborted. Ran only " ~ $curr_test ~ "/" ~ $num_tests ~ " (skipped " ~ ($num_tests - $curr_test) ~ ")");
         }
     }
     if $total_failed {
-        say("FAILED " ~ $total_failed ~ '/' ~ ($total_passed+$total_failed));	
-	Q:PIR {
-		exit 1
-	}
+        say("FAILED " ~ $total_failed ~ '/' ~ ($total_passed+$total_failed));
+        pir::exit(1);
     } elsif $failed_files {
         say("FAILED " ~ $failed_files ~ " files, PASSED " ~ $total_passed ~ ' tests');
     } else {
         say("PASSED " ~ $total_passed ~ ' tests in ' ~ $total_files ~ ' files');
     }
 }
+
+sub get_longest_file(@filenames) {
+    my $max_length := 0;
+    for @filenames {
+        my $filename := $_;
+        my $len := pir::length__IS($filename);
+        if $len >= $max_length {
+            $max_length := $len;
+        }
+    }
+    return ($max_length);
+}
+
+
