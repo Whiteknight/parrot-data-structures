@@ -91,28 +91,32 @@ sub vtable_set_integer_native() {
 sub vtable_push_pmc() {
     Q:PIR {
         $P0 = new ['FixedPMCQueue']
-        $P0 = 5
+        $I1 = 5
+        $P0 = $I1
         $P1 = box 1
         $I0 = 0
         push_eh push_pmc_sanity_error
+      L1:
         push $P0, $P1
+        dec $I1
+        gt $I1, 0, L1
         $I0 = 1
       push_pmc_sanity_error:
         pop_eh
-        ok($I0, "Can push onto (empty) queue")
+        ok($I0, "Can push up to capacity onto queue")
     }
 }
 
 sub vtable_push_pmc_overflow() {
     Q:PIR {
         $P0 = new ['FixedPMCQueue']
-        $I0 = 5
-        $P0 = $I0
+        $I1 = 5
+        $P0 = $I1
         $P1 = box 1
       L1:
         push $P0, $P1
-        dec $I0
-        gt $I0, 0, L1
+        dec $I1
+        gt $I1, 0, L1
         $I0 = 1
         push_eh push_pmc_overflow
         push $P0, $P1
@@ -205,19 +209,19 @@ sub vtable_get_integer() {
 
 sub method_to_array() {
     Q:PIR {
-        todo(0,"test .to_array()")
+        todo(0, "test .to_array()")
     }
 }
 
 sub method_total_mem_size() {
     Q:PIR {
-        todo(0,"test .total_mem_size()")
+        todo(0, "test .total_mem_size()")
     }
 }
 
 sub method_clear() {
     Q:PIR {
-        todo(0,"test .clear()")
+        todo(0, "test .clear()")
     }
 }
 
