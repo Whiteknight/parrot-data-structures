@@ -4,7 +4,7 @@ MAIN();
 
 sub MAIN () {
     load_test_more();
-    plan(23);
+    plan(27);
     load_linalg_group();
 
     op_new();
@@ -18,6 +18,7 @@ sub MAIN () {
     vtable_elements();
     vtable_get_bool();
     vtable_get_integer();
+    method_capacity();
     method_to_array();
     method_total_mem_size();
     method_clear();
@@ -37,6 +38,7 @@ sub load_linalg_group() {
         .local pmc pds
         pds = loadlib "./dynext/pds_group"
         if pds goto has_pds_group
+        say "Missing dynext/pds_group"
         exit 1
      has_pds_group:
     };
@@ -63,7 +65,7 @@ sub op_does() {
         $I0 = does $P0, 'queue'
         is($I0, 1, "Does 'queue'")
         $I0 = does $P0, "jibbajabba"
-        is($I0, 0, "Doesn't do 'jibbajabba'")
+        is($I0, 0, " ... but not 'jibbajabba'")
     }
 }
 
@@ -142,14 +144,9 @@ sub vtable_shift_pmc_underflow() {
     Q:PIR {
         $P0 = new ['FixedPMCQueue2']
         $P0 = 5
-        $P1 = box 1
-        $I0 = 1
-        push_eh shift_pmc_underflow
         $P2 = shift $P0
-        $I0 = 0
-      shift_pmc_underflow:
-        pop_eh
-        ok($I0, "Can't shift from empty queue (throws exception)")
+        $I0 = isnull $P2
+        ok($I0, "Shift on empty queue returns Null")
     }
 }
 
@@ -197,12 +194,33 @@ sub vtable_get_bool() {
 
 sub vtable_get_integer() {
     Q:PIR {
-        $P0 = new ['FixedPMCQueue2']
+        $P0 = new ['FixedPMCQueue']
         $I0 = $P0
         is($I0, 0, "Integer initially 0")
 
         $P0 = 5
         $I0 = $P0
+        is($I0, 0, "        ... still empty after setting capacity")
+
+        $P1 = box 1
+        push $P0, $P1
+        $I0 = $P0
+        is($I0, 1, "        ... is 1 after pushing 1 item")
+
+        $P2 = shift $P0
+        $I0 = $P0
+        is($I0, 0, "        ... is 0 after shifting all items")
+    }
+}
+
+sub method_capacity() {
+    Q:PIR {
+        $P0 = new ['FixedPMCQueue']
+        $P1 = $P0.'capacity'()
+        $I0 = isnull $P1
+        ok($I0, ".capacity() initially null")
+        $P0 = 5
+        $I0 = $P0.'capacity'()
         is($I0, 5, "    ... changes to reflect capacity")
     }
 }

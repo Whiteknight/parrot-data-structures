@@ -75,7 +75,8 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
     VTABLE void visit(PMC *info) {
         FPQ_DECL_ATTRS(SELF);
         PMC ** const storage = self.storage;
-        FPQ_ITERATE(i, VISIT_PMC(INTERP, info, storage[i]));
+        if (storage)
+            FPQ_ITERATE(i, VISIT_PMC(INTERP, info, storage[i]));
     }
 
     /* Size the queue. Cannot shrink the queue smaller than the number of items
@@ -85,53 +86,56 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         const INTVAL start = self.queue_start;
         const INTVAL end = self.queue_end;
         const INTVAL size = self.size;
-        if (newsize < FPQ_ITEMS())
+        const INTVAL items = FPQ_ITEMS();
+
+        if (newsize < items)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                 "FixedPMCQueue: Cannot shrink size with items in queue");
-        if (newsize != size)
+        if (newsize != size) {
             if (start == 0) {
                 FPQ_REALLOCATE(self.storage, newsize);
                 self.size = newsize;
             } else {
-                INTVAL ptr = start;
                 PMC ** const oldstorage = self.storage;
                 PMC ** newstorage = FPQ_ALLOCATE(newsize);
-                INTVAL i = 0;
-                while (ptr != end) {
-                    newstorage[i] = oldstorage[ptr];
-                    FPQ_IDX_INCR(ptr);
-                    i++;
+                if ( start > end ) {
+                    mem_sys_memmove( &newstorage[0], &oldstorage[start], (size - start) * sizeof(PMC*));
+                    mem_sys_memmove( &newstorage[size - start], &oldstorage[0], end * sizeof(PMC*));
+                } else {
+                    mem_sys_memmove( &newstorage[0], &oldstorage[start], (end - start) * sizeof(PMC*));
                 }
                 if (oldstorage)
                     mem_sys_free(oldstorage);
                 self.storage = newstorage;
                 self.size = newsize;
                 self.queue_start = 0;
-                self.queue_end = i;
+                self.queue_end = items;
             }
+        }
     }
 
     /* Push an item onto the queue */
     VTABLE void push_pmc(PMC *item) {
         FPQ_DECL_ATTRS(SELF);
-        if (self.size == self.items)
+
+        if (FPQ_FULL())
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
                     "FixedPMCQueue: Pushed too many items");
         self.storage[self.queue_end] = item;
-        FPQ_IDX_INCR(self.queue_end);
-        self.items++;
+        FPQ_IDXF_INCR(queue_end);
+        FPQ_ITEMS()++;
     }
 
     /* Pull an item off the queue */
     VTABLE PMC* shift_pmc() {
         FPQ_DECL_ATTRS(SELF);
         PMC * first_item;
-        if(!self.items)
-            Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
-                    "FixedPMCQueue: No items to shift");
+
+        if (FPQ_EMPTY())
+            return PMCNULL;
         first_item = self.storage[self.queue_start];
-        FPQ_IDX_INCR(self.queue_start);
-        self.items--;
+        FPQ_ITEMS()--;
+        FPQ_IDXF_INCR(queue_start);
         return first_item;
     }
 
@@ -146,18 +150,36 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         FPQ_DECL_ATTRS(SELF);
         return FPQ_ITEMS();
     }
-
-    /* Total amount of allocated storage slots in the queue */
     VTABLE INTVAL get_integer() {
         FPQ_DECL_ATTRS(SELF);
-        return(self.size);
+        return FPQ_ITEMS();
+    }
+
+    VTABLE INTVAL isnull() {
+        FPQ_DECL_ATTRS(SELF);
+        return self.size <= 0;
+    }
+
+    /* Total amount of allocated storage slots in the queue */
+    METHOD capacity() {
+        FPQ_DECL_ATTRS(SELF);
+        PMC * result;
+        if (self.size <= 0)
+            result = PMCNULL;
+        else {
+            result = Parrot_pmc_new(INTERP,
+                                    Parrot_get_ctx_HLL_type(INTERP,
+                                                            enum_class_Integer));
+            VTABLE_set_integer_native(INTERP, result, self.size);
+        }
+        RETURN(PMC* result);
     }
 
     /* Convert the queue to a FixedPMCArray. The array will have the same
        length as the queue, all additional spaces will contain PMCNULL */
     METHOD to_array() {
-        PMC * newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
         FPQ_DECL_ATTRS(SELF);
+        PMC * newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
         const INTVAL size = self.size;
         PMC ** const s = self.storage;
         INTVAL i = 0;
@@ -196,3 +218,10 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         FPQ_ITEMS() = 0;
     }
 }
+
+/*
+ * Local variables:
+ *   c-file-style: "parrot"
+ * End:
+ * vim: expandtab shiftwidth=4:
+ */
