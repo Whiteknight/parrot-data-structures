@@ -47,6 +47,8 @@ src/pmc/resizablepmcstack2.pmc
 src/pmc/fixedpmcstack.pmc
 src/pmc/resizablepmcqueue.pmc
 src/pmc/fixedpmcqueue.pmc
+src/pmc/fixedpmcqueue2.pmc
+src/pmc/fixedpmcqueue3.pmc
 SOURCES
     $S0 = pop $P3
     $P2['pds_group'] = $P3

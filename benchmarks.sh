@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Queue benchmarks:"
-for i in benchmarks/*queue.pir; do
+for i in benchmarks/*queue*.pir; do
     parrot $i
 done
 
