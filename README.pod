@@ -2,66 +2,103 @@
 
 =head2 Description
 
-This library intends to provide a listing of specialized PMC data types for use
-on the Parrot VM. These types will each be optimized in some way to provide
-better performance and/or more efficient use of memory than the default array
-types provided by the core VM. These types will be useful to people who need
-high performance and are willing to exchange some flexibility and functionality
-to achieve it.
+The Parrot-Data-Structures project intends to provide a library of specialized
+PMC data types for use with the Parrot VM. These types will each be optimized
+in some way to provide better performance and/or more efficient use of memory
+than the default array types provided by the core VM for certain usage patterns.
+These types will be useful to people who need high performance and are willing
+to exchange some flexibility and functionality to achieve it.
 
 Each type will have a particular optimization focus that will drive it's
 development. End users can select from among several variants to find one with
 a focus that meets the needs of the application.
 
+Because there are multiple ways to implement each of the target data structure
+types, and because different implementations will have different strengths and
+weaknesses, PDS may provide several implementations of individual types with
+plenty of tests and benchmarks to show efficacy and comparative merit. As types
+are benchmarked and tested to be both reliable and have suitably high
+performance, they will be made into regular, non-experimental versions or they
+will replace existing non-experimental types.
+
+
 =head2 Intended Data Types
 
 Here is a general list of data types. Initially we will aim to produce versions
-of these types that store PMC pointers only. Eventually other variants designed
-to hold other primitive types (INTVAL, STRING, FLOATVAL) for optimized access
-to those things.
+of these types that store PMC pointers only. Eventually we will also develop
+other variants designed to hold other primitive types (INTVAL, STRING,
+FLOATVAL) as well.
 
 =over 4
 
 =item* Stack
 
-This will be a First-In-Last-Out stack type with an optimization focus on
+Stacks are First-In-Last-Out types with an optimization focus on
 push/pop throughput performance. This type will not provide unshift/shift
-access and may have sub-optimal performance for other access methods.
+access and may have sub-optimal performance for other access methods. Stacks
+absolutely do not have shift/unshift interfaces, and likely will not allow
+indexed access either.
 
-There may be two stack types with fixed-size and dynamically-resizable memory
-layouts.
+Currently there are two primary stack types. FixedPMCStack uses fixed-width
+preallocated storage. Accesses are very fast but the storage must be
+preallocated. ResizablePMCStack uses dynamically-expanding storage which can be
+slower but is more flexible.
+
+In addition, there are several other experimental varieties that explore
+alternate implementation strategies.
 
 =item* Queue
 
-This will be a First-In-First-Out queue type with an optimization focus on
-push/shift throughput performance. This type will not provide pop/unshift
-access OR indexed element access.
+Queues are First-In-First-Out types with an optimization focus on push/shift
+throughput performance. Queues will not provide pop/shift interfaces and likely
+will not allow indexed access either.
+
+There are two primary Queue types. FixedPMCQueue uses fixed-width preallocated
+storage. Accesses are fast at the expense of a lack of flexibility.
+ResizablePMCQueue expands dynamically but accesses are slower.
+
+Other queue types are in development, including types that use alternate
+implementations and types that provide additional features (thread safety, for
+one).
 
 =item* Fixed-Size Array
 
-This will be a simple array type with an optimization focus on indexed element
-access. There will be no push/pop/shift/unshift access to elements. This array
-type will have a fixed-size and must be preallocated.
+Parrot provides several fixed-sized array types, but there is a general movement
+in that project to unify down to a single dynamically-resizable array type for
+all needs. This move helps to reduce code bloat and maintenance problems, but
+removes a key type for high-performance access.
+
+If Parrot removes it's fixed-size types they will likely be moved or copied to
+PDS.
+
+Fixed-size arrays are optimized for fast storage and fast indexed access, and
+will not provide other interface mechanisms such as push/pop/shift/unshift.
 
 =item* Dynamically-Resizable Array
 
-This will be a simple array type with an optimization focus on indexed element
-access. There will be no pop/shift/unshift access to elements, but there will be
-push access. This array type will be dynamically-extendable.
+If Parrot removes the majority of it's array types, some of its
+dynamically-expandable array types will move or be copied to PDS. Resizable
+array types will put more of a focus on access performance and economy of
+memory storage space than a general, type-agnostic array will.
 
 =item* Sparce Array
 
-This will be an array type with an optimization focus on efficient memory
-usage over sparse data sets. This type will not provide push/pop/shift/unshift
-access, but will be dynamically-resizable.
+Sparse arrays are array-like types with a focus on extremely efficient memory
+use for sparse data sets.
 
 =back
 
-This is only a partial list of possible types.
+This is only a partial list of possible types. Other data structures which can
+be subjected to a tight optimization focus will be candidates for addition to
+PDS.
+
+=head2 Dependencies
 
 =head2 Build
 
-Nothing to build yet
+ parrot setup.pir build
+ parrot setup.pir test
+ parrot setup.pir install
 
 =head2 Contact
 
