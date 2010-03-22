@@ -1,6 +1,6 @@
 #! parrot-nqp
 
-class Test::ResizablePMCStack2 is Pds::TestCase::ResizableStack;
+class Test::ResizablePMCStack2 is Pds::Testcase::ResizableStack;
 
 INIT {
     use('UnitTest::Testcase');

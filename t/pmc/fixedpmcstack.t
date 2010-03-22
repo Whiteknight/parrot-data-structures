@@ -1,6 +1,6 @@
 #! parrot-nqp
 
-class Test::FixedPMCStack is Pds::TestCase::FixedStack;
+class Test::FixedPMCStack is Pds::Testcase::FixedStack;
 
 INIT {
     use('UnitTest::Testcase');

@@ -1,6 +1,6 @@
 #! parrot-nqp
 
-class Test::ResizablePMCQueue is Pds::TestCase::ResizableQueue;
+class Test::ResizablePMCQueue is Pds::Testcase::ResizableQueue;
 
 INIT {
     use('UnitTest::Testcase');

@@ -1,6 +1,6 @@
 #! parrot-nqp
 
-class Test::FixedPMCQueue is Pds::TestCase::FixedQueue;
+class Test::FixedPMCQueue is Pds::Testcase::FixedQueue;
 
 INIT {
     use('UnitTest::Testcase');
