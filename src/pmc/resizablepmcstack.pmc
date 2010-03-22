@@ -146,6 +146,12 @@ pmclass ResizablePMCStack dynpmc auto_attrs provides stack {
         return total;
     }
 
+    VTABLE INTVAL get_bool() {
+        const INTVAL count = VTABLE_elements(INTERP, SELF);
+        const INTVAL elements = count > 0;
+        return(elements);
+    }
+
     /* Get a ResizablePMCArray containing the contents of the stack */
     METHOD to_array() {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);

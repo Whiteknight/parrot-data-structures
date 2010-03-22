@@ -137,20 +137,23 @@ pmclass FixedPMCQueue dynpmc auto_attrs provides queue {
         PMC * newarray = Parrot_pmc_new(INTERP, enum_class_FixedPMCArray);
         FPQ_ATTRS_CONST(attrs) = FPQ_GET_ATTRS(SELF);
         const INTVAL size = attrs->size;
+        const INTVAL items = attrs->items;
         const INTVAL start = attrs->queue_start;
         const INTVAL end = attrs->queue_end;
         PMC ** const s = attrs->storage;
         INTVAL i = 0, ptr = start;
-
-        VTABLE_set_integer_native(INTERP, newarray, size);
+        /* TODO: A little bit of an issue here. set_integer_native on FPA
+                 allocates storage, but it's that number that is returned later
+                 on FPA.get_integer, so the results are off. For a real faithful
+                 representation, we should return the same memory layout as we
+                 have here (including unpopulated null areas), but for now we
+                 need to truncate. When Parrot's core array types become sane,
+                 fix this. */
+        VTABLE_set_integer_native(INTERP, newarray, items);
         while (ptr != end) {
             VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[ptr]);
             i++;
             ptr = FPQ_NEXT_IDX(ptr, size);
-        }
-        while (i < size) {
-            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, PMCNULL);
-            i++;
         }
         RETURN(PMC* newarray);
     }

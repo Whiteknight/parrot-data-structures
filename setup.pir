@@ -52,14 +52,9 @@ SOURCES
     $P2['pds_group'] = $P3
     config['dynpmc'] = $P2
 
-    # test
-    $P4 = new 'Hash'
-    $P4['t/Glue.pbc'] = 't/Glue.pir'
-    config['pbc_pir'] = $P4
 
     $S0 = get_nqp()
     config['harness_exec'] = $S0
-    config['harness_files'] = 't/*.t t/pmc/*.t'
 
     .tailcall setup(args :flat, config :flat :named)
 .end

@@ -80,7 +80,7 @@ pmclass ResizablePMCStack2 dynpmc auto_attrs provides stack {
         PMC * item;
         if (items == -1)
             Parrot_ex_throw_from_c_args(INTERP, NULL, EXCEPTION_OUT_OF_BOUNDS,
-                "ResizablePMCStack: Pop from empty stack");
+                "ResizablePMCStack2: Pop from empty stack");
         item = s[items];
         attrs->items = items;
         return item;
@@ -91,6 +91,12 @@ pmclass ResizablePMCStack2 dynpmc auto_attrs provides stack {
         RPS_ATTRS_CONST(attrs) = RPS_GET_ATTRS(SELF);
         const INTVAL items = attrs->items;
         return items;
+    }
+
+    VTABLE INTVAL get_bool() {
+        const INTVAL elems = VTABLE_elements(INTERP, SELF);
+        const INTVAL has_elems = (elems > 0);
+        return has_elems;
     }
 
     /* Get a ResizablePMCArray containing the contents of the stack */

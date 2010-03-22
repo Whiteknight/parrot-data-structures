@@ -92,6 +92,12 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
         return items;
     }
 
+    VTABLE INTVAL get_bool() {
+        const INTVAL elems = VTABLE_elements(INTERP, SELF);
+        const INTVAL has_elems = (elems > 0);
+        return has_elems;
+    }
+
     /* Get the total allocated size of the stack */
     VTABLE INTVAL get_integer() {
         FPS_ATTRS_CONST(attrs) = FPS_GET_ATTRS(SELF);
@@ -109,11 +115,16 @@ pmclass FixedPMCStack dynpmc auto_attrs provides stack{
         const INTVAL items = attrs->items;
         PMC ** const s = attrs->storage;
         INTVAL i;
-        VTABLE_set_integer_native(INTERP, newarray, size);
+        /* TODO: A little bit of an issue here. set_integer_native on FPA
+                 allocates storage, but it's that number that is returned later
+                 on FPA.get_integer, so the results are off. For a real faithful
+                 representation, we should return the same memory layout as we
+                 have here (including unpopulated null areas), but for now we
+                 need to truncate. When Parrot's core array types become sane,
+                 fix this. */
+        VTABLE_set_integer_native(INTERP, newarray, items);
         for (i = 0; i < items; i++)
             VTABLE_set_pmc_keyed_int(INTERP, newarray, i, s[i]);
-        for ( ; i < size; i++)
-            VTABLE_set_pmc_keyed_int(INTERP, newarray, i, PMCNULL);
         RETURN(PMC * newarray);
     }
 

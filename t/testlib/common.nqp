@@ -87,7 +87,8 @@ class Pds::Testcase is UnitTest::Testcase {
         } else {
             assert_instance_of($a, "FixedPMCArray", "Incorrect array type");
         }
-        assert_equal(pir::elements__IP($a), 4, "array does not have the right number of elements");
+        my $arraylen := pir::elements__IP($a);
+        assert_equal($arraylen, 4, "array does not have the right number of elements. Want 4, have $arraylen");
         assert_equal($a[0], 1, "element 0 incorrect");
         assert_equal($a[1], 2, "element 1 incorrect");
         assert_equal($a[2], 3, "element 2 incorrect");
@@ -99,7 +100,7 @@ class Pds::Testcase is UnitTest::Testcase {
 class Pds::Testcase::Stack is Pds::Testcase {
     method test_OP_does() {
         my $f := self.create();
-        assert_true(pir::does__IP($f, "stack"), 1, "Stack does not do stack");
+        assert_true(pir::does__IP($f, "stack"), "Stack does not do stack");
     }
 
     method test_VTABLE_elements() {
@@ -142,8 +143,16 @@ class Pds::Testcase::Stack is Pds::Testcase {
         self.push_pmc($f, pir::box__PI(1));
         assert_true($f, "non-empty struct is not true");
 
-        pir::shift__PP($f);
+        pir::pop__PP($f);
         assert_false($f, "empty struct is not false");
+    }
+
+    method test_METHOD_total_mem_size() {
+        todo("Tests Needed!");
+    }
+
+    method test_METHOD_clear() {
+        todo("Tests Needed!");
     }
 }
 
@@ -179,7 +188,7 @@ class Pds::Testcase::ResizableStack is Pds::Testcase::Stack {
 class Pds::Testcase::Queue is Pds::Testcase {
     method test_OP_does() {
         my $f := self.create();
-        assert_true(pir::does__IPS($f, "queue"), 1, "Queue does not do queue");
+        assert_true(pir::does__IPS($f, "queue"), "Queue does not do queue");
     }
 
     method test_VTABLE_push_pmc() {
@@ -223,6 +232,14 @@ class Pds::Testcase::Queue is Pds::Testcase {
 
         pir::shift__PP($f);
         assert_false($f, "empty queue is not false");
+    }
+
+    method test_METHOD_total_mem_size() {
+        todo("Tests Needed!");
+    }
+
+    method test_METHOD_clear() {
+        todo("Tests Needed!");
     }
 }
 
