@@ -1,133 +1,69 @@
 #! parrot-nqp
-our @ARGS;
+
+class Test::ResizablePMCStack is Pds::TestCase;
+
+INIT {
+    use('UnitTest::Testcase');
+    use('UnitTest::Assertions');
+}
+
 MAIN();
-
-sub MAIN () {
-    load_test_more();
-    plan(10);
-
-    load_pds_group();
-    op_new();
-    op_does();
-    op_typeof();
-    vtable_push_pmc();
-    vtable_pop_pmc();
-    vtable_elements();
-    method_to_array();
-    method_total_mem_size();
-    method_clear();
+sub MAIN() {
+    my $proto := Opcode::get_root_global(pir::get_namespace__P().get_name);
+    $proto.suite.run;
 }
 
-sub load_test_more() {
-    Q:PIR {
-        .local pmc c
-        load_language 'parrot'
-        c = compreg 'parrot'
-        c.'import'('Test::More')
-    };
+method test_OP_does() {
+    self.set_roles("stack");
+    super();
 }
 
-sub load_pds_group() {
-    Q:PIR {
-        .local pmc pds
-        pds = loadlib "./dynext/pds_group"
-        if pds goto has_pds_group
-        exit 1
-     has_pds_group:
-    };
+method test_VTABLE_push_pmc() {
+    assert_throws_nothing("push throws", {
+        Q:PIR {
+            $P0 = new ['ResizablePMCStack']
+            $P1 = box 1
+            push $P0, $P1
+        }
+    });
 }
 
-sub op_new() {
-    Q:PIR {
-        push_eh op_new_sanity_error
-        $P0 = new ['ResizablePMCStack']
-        ok(1)
-        goto op_new_sanity_end
-      op_new_sanity_error:
-        ok(0)
-      op_new_sanity_end:
-        pop_eh
-
-        $I0 = isnull $P0
-        is($I0, 0)
-    }
-}
-
-sub op_does() {
-    Q:PIR {
-        $P0 = new ['ResizablePMCStack']
-        $I0 = does $P0, "stack"
-        is($I0, 1)
-        $I0 = does $P0, "jibbajabba"
-        is($I0, 0)
-    }
-}
-
-sub op_typeof() {
-    Q:PIR {
-        $P0 = new ['ResizablePMCStack']
-        $S0 = typeof $P0
-        is($S0, 'ResizablePMCStack')
-    }
-}
-
-sub vtable_push_pmc() {
-    Q:PIR {
-        $P0 = new ['ResizablePMCStack']
-        $P1 = box 1
-        push_eh push_pmc_sanity_error
-        push $P0, $P1
-        ok(1)
-        goto push_pmc_sanity_end
-      push_pmc_sanity_error:
-        ok(0)
-      push_pmc_sanity_end:
-        pop_eh
-    }
-}
-
-sub vtable_pop_pmc() {
+method test_VTABLE_pop_pmc() {
     Q:PIR {
         $P0 = new ['ResizablePMCStack']
         $P1 = box 1
         push $P0, $P1
         $P2 = pop $P0
-        is($P1, $P2)
+        assert_same($P1, $P2, "pushing and popping create different PMCs")
     }
 }
 
-sub vtable_elements() {
+method test_VTABLE_elements() {
     Q:PIR {
         $P0 = new ['ResizablePMCStack']
         $I0 = elements $P0
-        is($I0, 0)
+        assert_equal($I0, 0, "new RPS is empty")
 
         $P1 = box 1
         push $P0, $P1
         $I0 = elements $P0
-        is($I0, 1)
+        assert_equal($I0, 1, "RPS with one element in it has non-1 size")
 
         $P2 = pop $P0
         $I0 = elements $P0
-        is($I0, 0)
+        assert_equal($I0, 0, "empty RPS is empty")
     }
 }
 
-sub method_to_array() {
-    Q:PIR {
-        # TODO: This!
-    }
+method test_METHOD_to_array() {
+    todo("Tests Needed!");
 }
 
-sub method_total_mem_size() {
-    Q:PIR {
-        # TODO: This!
-    }
+method test_METHOD_total_mem_size() {
+    todo("Tests Needed!");
 }
 
-sub method_clear() {
-    Q:PIR {
-        # TODO: This!
-    }
+method test_METHOD_clear() {
+    todo("Tests Needed!");
 }
 

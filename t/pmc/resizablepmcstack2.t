@@ -1,66 +1,21 @@
 #! parrot-nqp
-our @ARGS;
+
+class Test::ResizablePMCStack is Pds::TestCase;
+
+INIT {
+    use('UnitTest::Testcase');
+    use('UnitTest::Assertions');
+}
+
 MAIN();
-
-sub MAIN () {
-    load_test_more();
-    plan(10);
-
-    load_pds_group();
-    op_new();
-    op_does();
-    op_typeof();
-    vtable_push_pmc();
-    vtable_pop_pmc();
-    vtable_elements();
-    method_to_array();
-    method_total_mem_size();
-    method_clear();
+sub MAIN() {
+    my $proto := Opcode::get_root_global(pir::get_namespace__P().get_name);
+    $proto.suite.run;
 }
 
-sub load_test_more() {
-    Q:PIR {
-        .local pmc c
-        load_language 'parrot'
-        c = compreg 'parrot'
-        c.'import'('Test::More')
-    };
-}
-
-sub load_pds_group() {
-    Q:PIR {
-        .local pmc pds
-        pds = loadlib "./dynext/pds_group"
-        if pds goto has_pds_group
-        exit 1
-     has_pds_group:
-    };
-}
-
-sub op_new() {
-    Q:PIR {
-        push_eh op_new_sanity_error
-        $P0 = new ['ResizablePMCStack2']
-        ok(1, "could create RPS2")
-        goto op_new_sanity_end
-      op_new_sanity_error:
-        ok(0, "could not create RPS2")
-      op_new_sanity_end:
-        pop_eh
-
-        $I0 = isnull $P0
-        is($I0, 0)
-    }
-}
-
-sub op_does() {
-    Q:PIR {
-        $P0 = new ['ResizablePMCStack2']
-        $I0 = does $P0, "stack"
-        is($I0, 1)
-        $I0 = does $P0, "jibbajabba"
-        is($I0, 0)
-    }
+method test_OP_does() {
+    self.set_roles("stack");
+    super();
 }
 
 sub op_typeof() {

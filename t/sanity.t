@@ -1,30 +1,19 @@
 #! parrot-nqp
-our @ARGS;
-MAIN();
 
-sub MAIN () {
-    my $num_tests := 18;
-    Q:PIR {
-        .local pmc c
-        load_language 'parrot'
-        c = compreg 'parrot'
-        c.'import'('Test::More')
-    };
-    plan(2);
-    ok(1, "Test harness works");
+class Test::Sanity is UnitTest::Testcase;
 
-    load_linalg_group();
+INIT {
+    use('UnitTest::Testcase');
+    use('UnitTest::Assertions');
 }
 
-sub load_linalg_group() {
-    Q:PIR {
-        .local pmc pds
-        pds = loadlib "./dynext/pds_group"
-        if pds goto has_pds_group
-        ok(0, "loading pds_group failed")
-        goto _end
-     has_pds_group:
-        ok(1, "has pds_group library available")
-     _end:
-    }
+MAIN();
+sub MAIN() {
+	my $proto := Opcode::get_root_global(pir::get_namespace__P().get_name);
+	$proto.suite.run;
+}
+
+method test_load_pds_group() {
+    my $pla := pir::loadlib__ps(""./dynext/pds_group"");
+    assert_not_instance_of($pla, "Undef", "Cannot load PDS library, pds_group");
 }
