@@ -81,7 +81,7 @@ dynamically-expandable array types will move or be copied to PDS. Resizable
 array types will put more of a focus on access performance and economy of
 memory storage space than a general, type-agnostic array will.
 
-=item* Sparce Array
+=item* Sparse Array
 
 Sparse arrays are array-like types with a focus on extremely efficient memory
 use for sparse data sets.
