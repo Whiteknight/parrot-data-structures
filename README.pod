@@ -31,7 +31,7 @@ FLOATVAL) as well.
 
 =over 4
 
-=item* Stack
+=item Stack
 
 Stacks are First-In-Last-Out types with an optimization focus on
 push/pop throughput performance. This type will not provide unshift/shift
@@ -47,7 +47,7 @@ slower but is more flexible.
 In addition, there are several other experimental varieties that explore
 alternate implementation strategies.
 
-=item* Queue
+=item Queue
 
 Queues are First-In-First-Out types with an optimization focus on push/shift
 throughput performance. Queues will not provide pop/shift interfaces and likely
@@ -61,7 +61,7 @@ Other queue types are in development, including types that use alternate
 implementations and types that provide additional features (thread safety, for
 one).
 
-=item* Fixed-Size Array
+=item Fixed-Size Array
 
 Parrot provides several fixed-sized array types, but there is a general movement
 in that project to unify down to a single dynamically-resizable array type for
@@ -74,14 +74,14 @@ PDS.
 Fixed-size arrays are optimized for fast storage and fast indexed access, and
 will not provide other interface mechanisms such as push/pop/shift/unshift.
 
-=item* Dynamically-Resizable Array
+=item Dynamically-Resizable Array
 
 If Parrot removes the majority of it's array types, some of its
 dynamically-expandable array types will move or be copied to PDS. Resizable
 array types will put more of a focus on access performance and economy of
 memory storage space than a general, type-agnostic array will.
 
-=item* Sparse Array
+=item Sparse Array
 
 Sparse arrays are array-like types with a focus on extremely efficient memory
 use for sparse data sets.
